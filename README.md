@@ -7,7 +7,7 @@ Next.js CRM для лідів з Google Sheets (Meta Lead Ads) через Apps S
 - Next.js App Router
 - Supabase (PostgreSQL, Auth, RLS)
 - Google Apps Script (push webhook)
-- Vercel Cron (нотифікації кожні 10 хв)
+- Telegram / Slack (миттєво після нового ліда)
 
 ## Швидкий старт
 
@@ -98,14 +98,6 @@ npm run dev
 
 Відкрийте http://localhost:3000 — редірект на `/login`.
 
-### Cron (локально / manual)
-
-```bash
-curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/process-notifications
-```
-
-На Vercel cron налаштований у `vercel.json` (нотифікації кожні 10 хв).
-
 ### Webhook (тест імпорту)
 
 ```bash
@@ -133,5 +125,4 @@ curl -X POST http://localhost:3000/api/webhooks/import-lead \
 - `src/services/import/` — мапінг Meta → leads, webhook upsert
 - `src/services/notifications/` — outbox Telegram/Slack
 - `src/app/api/webhooks/` — webhook імпорту
-- `src/app/api/cron/` — cron endpoints
 - `src/app/app/leads/` — UI лідів

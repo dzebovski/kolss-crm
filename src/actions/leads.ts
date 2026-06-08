@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { enqueueLeadNotifications } from "@/services/notifications/enqueue";
+import { processPendingNotifications } from "@/services/notifications/process";
 import { normalizePhoneForOffice } from "@/lib/phone";
 import { formatSupabaseError } from "@/lib/errors";
 import { uploadLeadAttachments } from "@/services/storage/lead-attachments";
@@ -206,6 +207,7 @@ export async function createManualLead(formData: FormData) {
     .eq("id", lead.office_id)
     .single();
   await enqueueLeadNotifications(admin, lead, office);
+  await processPendingNotifications(admin);
 
   revalidatePath("/app/leads");
   return lead.id;

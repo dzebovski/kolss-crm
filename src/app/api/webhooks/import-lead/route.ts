@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyImportWebhookSecret } from "@/lib/webhook-auth";
 import { processWebhookImport } from "@/services/import/run-import";
+import { processPendingNotifications } from "@/services/notifications/process";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,11 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await processWebhookImport(supabase, source, rows);
-    return NextResponse.json({ ok: true, ...result });
+    const notifications =
+      result.rowsCreated > 0
+        ? await processPendingNotifications(supabase)
+        : { processed: 0, sent: 0, failed: 0 };
+    return NextResponse.json({ ok: true, ...result, notifications });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Import failed";
     console.error("[webhooks/import-lead]", message);
