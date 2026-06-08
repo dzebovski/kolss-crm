@@ -8,7 +8,10 @@ export async function enqueueLeadNotifications(
   offices?: { code: string } | null
 ) {
   const officeCode = offices?.code;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL_PUBLIC?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    "";
   const payload = {
     lead_id: lead.id,
     name: lead.name,
