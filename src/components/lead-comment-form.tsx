@@ -19,13 +19,17 @@ export function LeadCommentForm({ leadId, currentStage, stages }: Props) {
       className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
       onSubmit={(e) => {
         e.preventDefault();
-        const fd = new FormData(e.currentTarget);
+        const form = e.currentTarget;
+        const fd = new FormData(form);
         const stage = fd.get("pipeline_stage") as string;
         const body = fd.get("body") as string;
         startTransition(async () => {
           await addLeadComment(leadId, stage, body);
-          e.currentTarget.reset();
-          (e.currentTarget.elements.namedItem("pipeline_stage") as HTMLSelectElement).value = currentStage;
+          form.reset();
+          const stageSelect = form.elements.namedItem(
+            "pipeline_stage"
+          ) as HTMLSelectElement | null;
+          if (stageSelect) stageSelect.value = currentStage;
         });
       }}
     >

@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/import-leads",
+      "path": "/api/cron/process-notifications",
       "schedule": "*/10 * * * *"
     }
   ]

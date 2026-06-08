@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# supabase (schema managed in Supabase dashboard / linked project)
+/supabase/migrations
+
 # vercel
 .vercel
 

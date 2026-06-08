@@ -1,3 +1,5 @@
+import { normalizePhoneForOffice } from "@/lib/phone";
+
 const META_COLUMNS = {
   id: "id",
   created_time: "created_time",
@@ -43,11 +45,6 @@ function parseCreatedTime(value: string | undefined): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function normalizePhone(value: string | undefined): string | null {
-  if (!value?.trim()) return null;
-  return value.replace(/^p:/i, "").trim() || null;
-}
-
 function isTestLead(email: string | null, raw: Record<string, unknown>): boolean {
   if (process.env.IMPORT_INCLUDE_TEST_LEADS === "true") return false;
   if (email?.toLowerCase() === "test@meta.com") return true;
@@ -63,6 +60,21 @@ function rowToRecord(headers: string[], row: string[]): Record<string, string> {
   return record;
 }
 
+function normalizeRecord(
+  record: Record<string, unknown>
+): Record<string, string> {
+  const normalized: Record<string, string> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (!key.trim()) continue;
+    if (value === null || value === undefined) {
+      normalized[key.trim()] = "";
+    } else {
+      normalized[key.trim()] = String(value).trim();
+    }
+  }
+  return normalized;
+}
+
 function get(
   record: Record<string, string>,
   key: string
@@ -71,21 +83,22 @@ function get(
   return v?.trim() ? v.trim() : undefined;
 }
 
-export function mapSheetRow(
-  headers: string[],
-  row: string[],
-  rowNumber: number,
-  spreadsheetId: string,
-  sheetName: string
-): MappedLeadRow | null {
-  const record = rowToRecord(headers, row);
+function mapRecordToLead(
+  record: Record<string, string>,
+  options: {
+    rowNumber: number;
+    spreadsheetId: string;
+    sheetName: string;
+    officeCode: string;
+  }
+): MappedLeadRow {
   const raw_payload = { ...record } as Record<string, unknown>;
 
   let externalId = get(record, META_COLUMNS.id);
   const source_system = "meta_lead_ads";
 
   if (!externalId) {
-    externalId = `google_sheet:${spreadsheetId}:${sheetName}:${rowNumber}`;
+    externalId = `google_sheet:${options.spreadsheetId}:${options.sheetName}:${options.rowNumber}`;
   } else if (!externalId.startsWith("l:")) {
     externalId = `l:${externalId}`;
   }
@@ -96,7 +109,10 @@ export function mapSheetRow(
     source_system,
     external_lead_id: externalId,
     name: get(record, META_COLUMNS.full_name) ?? null,
-    phone: normalizePhone(get(record, META_COLUMNS.phone_number)),
+    phone: normalizePhoneForOffice(
+      get(record, META_COLUMNS.phone_number),
+      options.officeCode
+    ),
     email,
     product_interest: get(record, META_COLUMNS.product_interest) ?? null,
     project_stage_source: get(record, META_COLUMNS.project_stage_source) ?? null,
@@ -115,6 +131,40 @@ export function mapSheetRow(
 
   mapped.isTestLead = isTestLead(email, raw_payload);
   return mapped;
+}
+
+export function mapLeadRecord(
+  record: Record<string, unknown>,
+  options: {
+    rowNumber?: number;
+    spreadsheetId: string;
+    sheetName: string;
+    officeCode: string;
+  }
+): MappedLeadRow {
+  return mapRecordToLead(normalizeRecord(record), {
+    rowNumber: options.rowNumber ?? 0,
+    spreadsheetId: options.spreadsheetId,
+    sheetName: options.sheetName,
+    officeCode: options.officeCode,
+  });
+}
+
+export function mapSheetRow(
+  headers: string[],
+  row: string[],
+  rowNumber: number,
+  spreadsheetId: string,
+  sheetName: string,
+  officeCode: string
+): MappedLeadRow | null {
+  const record = rowToRecord(headers, row);
+  return mapRecordToLead(record, {
+    rowNumber,
+    spreadsheetId,
+    sheetName,
+    officeCode,
+  });
 }
 
 export function headersFromRows(rows: string[][], headerRow: number): {

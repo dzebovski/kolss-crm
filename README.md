@@ -1,13 +1,13 @@
 # KOLSS CRM
 
-Next.js CRM для лідів з Google Sheets (Meta Lead Ads), Supabase та нотифікаціями Telegram/Slack.
+Next.js CRM для лідів з Google Sheets (Meta Lead Ads) через Apps Script, Supabase та нотифікаціями Telegram/Slack.
 
 ## Стек
 
 - Next.js App Router
 - Supabase (PostgreSQL, Auth, RLS)
-- Google Sheets API (service account)
-- Vercel Cron (кожні 10 хв)
+- Google Apps Script (push webhook)
+- Vercel Cron (нотифікації кожні 10 хв)
 
 ## Швидкий старт
 
@@ -33,18 +33,63 @@ npx supabase db push
    - `office_admin` / `office_member` — лише свій офіс
 3. Додайте рядки в `user_office_memberships` (`user_id`, `office_id`) для не-super-admin.
 
-### 3. Google Sheets
+### 3. Джерела імпорту (Google Sheets → CRM)
 
-1. Створіть Service Account у Google Cloud, увімкніть Sheets API.
-2. Додайте `GOOGLE_SHEETS_CLIENT_EMAIL` та `GOOGLE_SHEETS_PRIVATE_KEY` у env.
-3. Поділіться кожним Sheet з email service account (Editor або Viewer).
-4. У таблиці `lead_import_sources` оновіть `spreadsheet_id`, `sheet_name`, встановіть `is_enabled = true`.
+Кожна Google-таблиця Meta Lead Ads прив’язується до офісу в Supabase.
+
+**Таблиця `lead_import_sources`:**
+
+| Поле | Опис |
+|------|------|
+| `office_id` | UUID офісу (`kyiv` / `warsaw` з таблиці `offices`) |
+| `name` | Назва джерела, напр. `Meta Lead Ads — Київ` |
+| `spreadsheet_id` | ID з URL таблиці |
+| `sheet_name` | Назва вкладки (зазвичай `Sheet1`) |
+| `header_row` | Рядок заголовків (зазвичай `1`) |
+| `is_enabled` | `true` для активного джерела |
+| `id` | UUID рядка — потрібен для Apps Script як `SOURCE_ID` |
+
+Для Києва і Варшави — окремі рядки (різні таблиці / `office_id`).
+
+**Env CRM:**
+
+```bash
+IMPORT_WEBHOOK_SECRET=<довгий випадковий рядок>
+```
+
+**Google Apps Script** (скрипт: `scripts/google-apps-script/meta-leads-import.gs`):
+
+1. У таблиці: Extensions → Apps Script → вставте скрипт.
+2. Project settings → Script properties:
+
+| Property | Значення |
+|----------|----------|
+| `CRM_WEBHOOK_URL` | `https://your-crm.vercel.app/api/webhooks/import-lead` |
+| `IMPORT_WEBHOOK_SECRET` | той самий секрет, що в CRM |
+| `SOURCE_ID` | `id` з `lead_import_sources` |
+| `SHEET_NAME` | назва вкладки |
+| `HEADER_ROW` | `1` (опційно) |
+
+3. Запустіть `installTrigger()` — автосинк кожні 5 хв.
+4. Запустіть `syncAllLeads()` — одноразовий імпорт існуючих рядків.
 
 ### 4. Нотифікації
 
 Заповніть `TELEGRAM_*` та `SLACK_WEBHOOK_URL_*` для Києва та Варшави.
 
-### 5. Запуск
+### 5. Storage (файли лідів)
+
+Після міграції `20260526140000_lead_form_fields_attachments.sql` з’явиться bucket `lead-attachments` (приватний, до 5 МБ, PDF/JPG/PNG/DOCX/XLSX).
+
+Якщо bucket не створився автоматично, у Dashboard → **Storage** → **New bucket**:
+- Name: `lead-attachments`
+- Public: **off**
+- File size limit: **5 MB**
+- Allowed MIME types: `application/pdf`, `image/jpeg`, `image/png`, Word/Excel OpenXML
+
+Завантаження йде через server action (service role). Перегляд — через signed URL на картці ліда.
+
+### 6. Запуск
 
 ```bash
 npm install
@@ -56,16 +101,26 @@ npm run dev
 ### Cron (локально / manual)
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/import-leads
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/process-notifications
 ```
 
-На Vercel cron налаштований у `vercel.json` (потрібен Pro для інтервалу 10 хв, або зовнішній cron).
+На Vercel cron налаштований у `vercel.json` (нотифікації кожні 10 хв).
+
+### Webhook (тест імпорту)
+
+```bash
+curl -X POST http://localhost:3000/api/webhooks/import-lead \
+  -H "Authorization: Bearer $IMPORT_WEBHOOK_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"source_id":"<uuid>","rows":[{"id":"l:123","created_time":"2026-05-20T08:31:53-05:00","phone_number":"p:+380501234567","full_name":"Test","email":"a@b.com"}]}'
+```
 
 ## Поведінка імпорту
 
-- Унікальний ключ: `(source_system, external_lead_id)`; fallback: `google_sheet:{id}:{sheet}:{row}`.
+- Унікальний ключ: `(source_system, external_lead_id)`; Meta `id` → `l:{id}`.
 - Повторний імпорт оновлює marketing-поля та `raw_payload`, **не** змінює `crm_status` / `office_id`.
 - Тестові ліди (`test@meta.com`, `<test lead:`) пропускаються (окрім `IMPORT_INCLUDE_TEST_LEADS=true`).
+- Колонка `lead_status` у Sheet (Meta NEW/WORKING) **не** синхронізується в CRM pipeline.
 
 ## Коментарі
 
@@ -74,7 +129,9 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/impo
 ## Структура
 
 - `supabase/migrations/` — схема БД + seed
-- `src/services/import/` — Google Sheets → leads
+- `scripts/google-apps-script/` — Apps Script для push-імпорту
+- `src/services/import/` — мапінг Meta → leads, webhook upsert
 - `src/services/notifications/` — outbox Telegram/Slack
+- `src/app/api/webhooks/` — webhook імпорту
 - `src/app/api/cron/` — cron endpoints
 - `src/app/app/leads/` — UI лідів

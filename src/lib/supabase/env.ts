@@ -11,7 +11,8 @@ export function getSupabaseAnonKey() {
 }
 
 export function getSupabaseServiceRoleKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  return key || null;
 }
 
 export function isSupabaseConfigured() {

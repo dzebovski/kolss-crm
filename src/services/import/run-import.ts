@@ -1,13 +1,89 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchSheetRows } from "@/lib/google/sheets";
 import type { ImportSource } from "@/lib/types/database";
 import { enqueueLeadNotifications } from "@/services/notifications/enqueue";
-import { headersFromRows, mapSheetRow } from "./lead-mapper";
+import { mapLeadRecord, type MappedLeadRow } from "./lead-mapper";
 
-export async function runImportForSource(
+export type ImportSourceWithOffice = ImportSource & {
+  offices?: { code: string } | null;
+};
+
+export type UpsertResult = "created" | "updated" | "skipped";
+
+export type ImportBatchResult = {
+  sourceId: string;
+  rowsProcessed: number;
+  rowsCreated: number;
+  rowsUpdated: number;
+  rowsSkipped: number;
+};
+
+function marketingFieldsFromMapped(mapped: MappedLeadRow) {
+  return {
+    name: mapped.name,
+    phone: mapped.phone,
+    email: mapped.email,
+    product_interest: mapped.product_interest,
+    project_stage_source: mapped.project_stage_source,
+    source_created_at: mapped.source_created_at,
+    ad_id: mapped.ad_id,
+    ad_name: mapped.ad_name,
+    campaign_id: mapped.campaign_id,
+    campaign_name: mapped.campaign_name,
+    form_id: mapped.form_id,
+    form_name: mapped.form_name,
+    platform: mapped.platform,
+    is_organic: mapped.is_organic,
+    raw_payload: mapped.raw_payload,
+  };
+}
+
+export async function upsertMappedLead(
   supabase: SupabaseClient,
-  source: ImportSource & { offices?: { code: string } }
-) {
+  source: ImportSourceWithOffice,
+  mapped: MappedLeadRow
+): Promise<UpsertResult> {
+  if (mapped.isTestLead) return "skipped";
+
+  const { data: existing } = await supabase
+    .from("leads")
+    .select("id")
+    .eq("source_system", mapped.source_system)
+    .eq("external_lead_id", mapped.external_lead_id)
+    .maybeSingle();
+
+  const marketingFields = marketingFieldsFromMapped(mapped);
+
+  if (existing) {
+    await supabase.from("leads").update(marketingFields).eq("id", existing.id);
+    return "updated";
+  }
+
+  const { data: created, error: insertErr } = await supabase
+    .from("leads")
+    .insert({
+      office_id: source.office_id,
+      source_system: mapped.source_system,
+      external_lead_id: mapped.external_lead_id,
+      crm_status: "new",
+      ...marketingFields,
+    })
+    .select("id, name, phone, email, product_interest, office_id")
+    .single();
+
+  if (insertErr) throw insertErr;
+
+  if (created) {
+    await enqueueLeadNotifications(supabase, created, source.offices ?? null);
+  }
+
+  return "created";
+}
+
+export async function processWebhookImport(
+  supabase: SupabaseClient,
+  source: ImportSourceWithOffice,
+  rows: Record<string, unknown>[]
+): Promise<ImportBatchResult> {
   const { data: run, error: runErr } = await supabase
     .from("lead_import_runs")
     .insert({ source_id: source.id, status: "running" })
@@ -21,77 +97,22 @@ export async function runImportForSource(
   let rowsUpdated = 0;
   let rowsSkipped = 0;
 
+  const officeCode = source.offices?.code ?? "kyiv";
+
   try {
-    const sheetRows = await fetchSheetRows(
-      source.spreadsheet_id,
-      source.sheet_name
-    );
-    const { headers, dataRows } = headersFromRows(
-      sheetRows,
-      source.header_row
-    );
-
-    for (const { row, rowNumber } of dataRows) {
+    for (let i = 0; i < rows.length; i++) {
       rowsProcessed++;
-      const mapped = mapSheetRow(
-        headers,
-        row,
-        rowNumber,
-        source.spreadsheet_id,
-        source.sheet_name
-      );
-      if (!mapped || mapped.isTestLead) {
-        rowsSkipped++;
-        continue;
-      }
+      const mapped = mapLeadRecord(rows[i], {
+        rowNumber: i + 1,
+        spreadsheetId: source.spreadsheet_id,
+        sheetName: source.sheet_name,
+        officeCode,
+      });
 
-      const { data: existing } = await supabase
-        .from("leads")
-        .select("id, crm_status, office_id")
-        .eq("source_system", mapped.source_system)
-        .eq("external_lead_id", mapped.external_lead_id)
-        .maybeSingle();
-
-      const marketingFields = {
-        name: mapped.name,
-        phone: mapped.phone,
-        email: mapped.email,
-        product_interest: mapped.product_interest,
-        project_stage_source: mapped.project_stage_source,
-        source_created_at: mapped.source_created_at,
-        ad_id: mapped.ad_id,
-        ad_name: mapped.ad_name,
-        campaign_id: mapped.campaign_id,
-        campaign_name: mapped.campaign_name,
-        form_id: mapped.form_id,
-        form_name: mapped.form_name,
-        platform: mapped.platform,
-        is_organic: mapped.is_organic,
-        raw_payload: mapped.raw_payload,
-      };
-
-      if (existing) {
-        await supabase.from("leads").update(marketingFields).eq("id", existing.id);
-        rowsUpdated++;
-      } else {
-        const { data: created, error: insertErr } = await supabase
-          .from("leads")
-          .insert({
-            office_id: source.office_id,
-            source_system: mapped.source_system,
-            external_lead_id: mapped.external_lead_id,
-            crm_status: "new",
-            ...marketingFields,
-          })
-          .select("id, name, phone, email, product_interest, office_id")
-          .single();
-
-        if (insertErr) throw insertErr;
-        rowsCreated++;
-        if (created) {
-          await enqueueLeadNotifications(supabase, created, source.offices ?? null);
-        }
-      }
+      const result = await upsertMappedLead(supabase, source, mapped);
+      if (result === "created") rowsCreated++;
+      else if (result === "updated") rowsUpdated++;
+      else rowsSkipped++;
     }
 
     await supabase
@@ -134,18 +155,4 @@ export async function runImportForSource(
       .eq("id", run.id);
     throw e;
   }
-}
-
-export async function runAllImports(supabase: SupabaseClient) {
-  const { data: sources, error } = await supabase
-    .from("lead_import_sources")
-    .select("*, offices(code)")
-    .eq("is_enabled", true);
-
-  if (error) throw error;
-  const results = [];
-  for (const source of sources ?? []) {
-    results.push(await runImportForSource(supabase, source as ImportSource & { offices?: { code: string } }));
-  }
-  return results;
 }

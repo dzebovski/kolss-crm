@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { LeadsFilter } from "@/components/leads-filter";
+import { formatLeadDateTime } from "@/lib/datetime";
+import { formatPhoneDisplay } from "@/lib/phone";
 import type { Lead, Office, PipelineStage } from "@/lib/types/database";
 
 export default async function LeadsPage({
@@ -12,10 +14,45 @@ export default async function LeadsPage({
   const { office: officeFilter } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: offices }, { data: stages }] = await Promise.all([
-    supabase.from("offices").select("*").eq("is_active", true).order("code"),
-    supabase.from("pipeline_stages").select("*").order("sort_order"),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+    : { data: null };
+
+  const isSuperAdmin = profile?.role === "super_admin";
+
+  const [{ data: allOffices }, { data: stages }, { data: memberships }] =
+    await Promise.all([
+      supabase.from("offices").select("*").eq("is_active", true).order("code"),
+      supabase.from("pipeline_stages").select("*").order("sort_order"),
+      user && !isSuperAdmin
+        ? supabase
+            .from("user_office_memberships")
+            .select("office_id, offices(*)")
+            .eq("user_id", user.id)
+        : Promise.resolve({ data: null }),
+    ]);
+
+  const offices = (allOffices as Office[]) ?? [];
+  const officeCodeById = new Map(offices.map((o) => [o.id, o.code]));
+  const userOffices: Office[] =
+    isSuperAdmin || !memberships
+      ? offices
+      : memberships
+          .map((m) => m.offices as unknown as Office)
+          .filter(Boolean);
+
+  const filterOffices = isSuperAdmin ? offices : userOffices;
+  const selectedOfficeId = isSuperAdmin
+    ? officeFilter ?? ""
+    : (userOffices[0]?.id ?? "");
 
   let query = supabase
     .from("leads")
@@ -23,7 +60,7 @@ export default async function LeadsPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (officeFilter) {
+  if (isSuperAdmin && officeFilter) {
     query = query.eq("office_id", officeFilter);
   }
 
@@ -33,6 +70,41 @@ export default async function LeadsPage({
     (stages as PipelineStage[] | null)?.map((s) => [s.code, s.label_uk]) ?? []
   );
 
+  const officeNameById = new Map(offices.map((o) => [o.id, o.name_uk]));
+
+  function officeLabel(
+    lead: Lead & {
+      offices?: { name_uk: string; code?: string } | { name_uk: string; code?: string }[] | null;
+    }
+  ) {
+    const joined = lead.offices;
+    const office = Array.isArray(joined) ? joined[0] : joined;
+    if (office?.name_uk) return office.name_uk;
+    return officeNameById.get(lead.office_id) ?? "—";
+  }
+
+  function officeCodeForLead(
+    lead: Lead & {
+      offices?: { code?: string } | { code?: string }[] | null;
+    }
+  ) {
+    const joined = lead.offices;
+    const office = Array.isArray(joined) ? joined[0] : joined;
+    return office?.code ?? officeCodeById.get(lead.office_id) ?? "kyiv";
+  }
+
+  function statusTimeLabel(
+    lead: Lead & {
+      offices?: { code?: string } | { code?: string }[] | null;
+    }
+  ) {
+    const isNew = !lead.crm_status || lead.crm_status === "new";
+    const ts = isNew
+      ? lead.created_at
+      : lead.crm_status_changed_at ?? lead.created_at;
+    return formatLeadDateTime(ts, officeCodeForLead(lead));
+  }
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -40,8 +112,10 @@ export default async function LeadsPage({
         <div className="flex items-center gap-3">
           <Suspense>
             <LeadsFilter
-              offices={(offices as Office[]) ?? []}
-              currentOfficeId={officeFilter}
+              offices={filterOffices}
+              currentOfficeId={selectedOfficeId}
+              disabled={!isSuperAdmin}
+              showAllOption={isSuperAdmin}
             />
           </Suspense>
           <Link
@@ -61,20 +135,39 @@ export default async function LeadsPage({
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--background)]">
             <tr>
+              {isSuperAdmin && (
+                <th className="px-4 py-3 font-medium">Офіс</th>
+              )}
+              <th className="px-4 py-3 font-medium">Статус</th>
               <th className="px-4 py-3 font-medium">Імʼя</th>
               <th className="px-4 py-3 font-medium">Телефон</th>
-              <th className="px-4 py-3 font-medium">Офіс</th>
-              <th className="px-4 py-3 font-medium">Етап</th>
-              <th className="px-4 py-3 font-medium">Створено</th>
             </tr>
           </thead>
           <tbody>
-            {(leads as (Lead & { offices: { name_uk: string } })[] | null)?.map(
-              (lead) => (
+            {(leads as (Lead & {
+              offices: { name_uk: string; code?: string } | { name_uk: string; code?: string }[];
+            })[] | null)?.map((lead) => {
+              const code = officeCodeForLead(lead);
+              return (
                 <tr
                   key={lead.id}
                   className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--background)]"
                 >
+                  {isSuperAdmin && (
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded-md bg-[var(--background)] px-2 py-0.5 text-xs font-medium">
+                        {officeLabel(lead)}
+                      </span>
+                    </td>
+                  )}
+                  <td className="px-4 py-3">
+                    <div className="font-medium">
+                      {stageMap.get(lead.crm_status) ?? lead.crm_status ?? "—"}
+                    </div>
+                    <div className="mt-0.5 text-xs text-[var(--muted)]">
+                      {statusTimeLabel(lead)}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/app/leads/${lead.id}`}
@@ -83,19 +176,12 @@ export default async function LeadsPage({
                       {lead.name ?? "—"}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{lead.phone ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    {lead.offices?.name_uk ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {stageMap.get(lead.crm_status) ?? lead.crm_status}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--muted)]">
-                    {new Date(lead.created_at).toLocaleString("uk-UA")}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatPhoneDisplay(lead.phone, code)}
                   </td>
                 </tr>
-              )
-            )}
+              );
+            })}
           </tbody>
         </table>
         {!leads?.length && !error && (

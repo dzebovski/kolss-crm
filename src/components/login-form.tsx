@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "./ui/button";
@@ -13,8 +13,16 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function submitOnEnter(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && !loading) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError(null);
     const supabase = createClient();
@@ -38,9 +46,12 @@ export function LoginForm() {
         <label className="mb-1 block text-sm text-[var(--muted)]">Email</label>
         <input
           type="email"
+          name="email"
+          autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={submitOnEnter}
           className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2"
         />
       </div>
@@ -48,9 +59,12 @@ export function LoginForm() {
         <label className="mb-1 block text-sm text-[var(--muted)]">Пароль</label>
         <input
           type="password"
+          name="password"
+          autoComplete="current-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={submitOnEnter}
           className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2"
         />
       </div>

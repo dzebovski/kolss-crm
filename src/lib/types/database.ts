@@ -22,12 +22,16 @@ export type Lead = {
   source_system: string;
   external_lead_id: string;
   crm_status: string;
+  crm_status_changed_at: string | null;
   assigned_to: string | null;
   name: string | null;
   phone: string | null;
   email: string | null;
   product_interest: string | null;
+  order_comment: string | null;
+  city_region: string | null;
   project_stage_source: string | null;
+  stage_comment: string | null;
   source_created_at: string | null;
   ad_id: string | null;
   ad_name: string | null;
@@ -62,6 +66,17 @@ export type LeadEvent = {
   new_value: Record<string, unknown> | null;
   created_at: string;
   profiles?: { display_name: string | null };
+};
+
+export type LeadAttachment = {
+  id: string;
+  lead_id: string;
+  uploaded_by: string;
+  file_name: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
 };
 
 export type ImportSource = {
