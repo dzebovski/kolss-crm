@@ -51,10 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await processWebhookImport(supabase, source, rows);
-    const notifications =
-      result.rowsCreated > 0
-        ? await processPendingNotifications(supabase)
-        : { processed: 0, sent: 0, failed: 0 };
+    const notifications = await processPendingNotifications(supabase);
     return NextResponse.json({ ok: true, ...result, notifications });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Import failed";

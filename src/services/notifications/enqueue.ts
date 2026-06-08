@@ -1,14 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Lead } from "@/lib/types/database";
-
-function slackConfigured(officeCode: string | undefined): boolean {
-  const prefix =
-    officeCode === "kyiv" ? "KYIV" : officeCode === "warsaw" ? "WARSAW" : null;
-  const webhook =
-    (prefix && process.env[`SLACK_WEBHOOK_URL_${prefix}`]) ||
-    process.env.SLACK_WEBHOOK_URL_KYIV;
-  return !!webhook;
-}
+import { getSlackWebhookUrl, telegramConfigured } from "@/lib/office-env";
 
 export async function enqueueLeadNotifications(
   supabase: SupabaseClient,
@@ -27,8 +19,10 @@ export async function enqueueLeadNotifications(
     crm_url: siteUrl ? `${siteUrl}/app/leads/${lead.id}` : null,
   };
 
-  const channels: ("telegram" | "slack")[] = ["telegram"];
-  if (slackConfigured(officeCode)) channels.push("slack");
+  const channels: ("telegram" | "slack")[] = [];
+  if (telegramConfigured(officeCode)) channels.push("telegram");
+  if (getSlackWebhookUrl(officeCode)) channels.push("slack");
+
   for (const channel of channels) {
     await supabase.from("lead_notifications").upsert(
       {

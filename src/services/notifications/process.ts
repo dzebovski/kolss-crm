@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  getSlackWebhookUrl,
+  getTelegramBotToken,
+  getTelegramChatId,
+} from "@/lib/office-env";
 
 type NotificationRow = {
   id: string;
@@ -8,23 +13,16 @@ type NotificationRow = {
   attempts: number;
 };
 
-function officeEnvPrefix(officeCode: string | undefined): "KYIV" | "WARSAW" | null {
-  if (officeCode === "kyiv") return "KYIV";
-  if (officeCode === "warsaw") return "WARSAW";
-  return null;
-}
-
 async function sendTelegram(
   text: string,
   officeCode: string | undefined
 ): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const prefix = officeEnvPrefix(officeCode);
-  const chatId =
-    (prefix && process.env[`TELEGRAM_CHAT_ID_${prefix}`]) ||
-    process.env.TELEGRAM_CHAT_ID_KYIV;
+  const token = getTelegramBotToken(officeCode);
+  const chatId = getTelegramChatId(officeCode);
   if (!token || !chatId) {
-    throw new Error("Missing TELEGRAM_BOT_TOKEN or office chat id");
+    throw new Error(
+      `Missing Telegram config for office: ${officeCode ?? "unknown"}`
+    );
   }
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
@@ -40,10 +38,7 @@ async function sendSlack(
   text: string,
   officeCode: string | undefined
 ): Promise<void> {
-  const prefix = officeEnvPrefix(officeCode);
-  const webhook =
-    (prefix && process.env[`SLACK_WEBHOOK_URL_${prefix}`]) ||
-    process.env.SLACK_WEBHOOK_URL_KYIV;
+  const webhook = getSlackWebhookUrl(officeCode);
   if (!webhook) throw new Error("Missing Slack webhook for office");
   const res = await fetch(webhook, {
     method: "POST",
