@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { roleLabel } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
 
@@ -32,12 +33,20 @@ export async function AppHeader() {
             >
               Новий лід
             </Link>
+            {profile?.role === "super_admin" && (
+              <Link
+                href="/app/admin/users"
+                className="hover:text-[var(--foreground)]"
+              >
+                Користувачі
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-[var(--muted)]">
             {profile?.display_name ?? user?.email}
-            {profile?.role ? ` · ${profile.role}` : ""}
+            {profile?.role ? ` · ${roleLabel(profile.role)}` : ""}
           </span>
           <SignOutButton />
         </div>

@@ -10,7 +10,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const deactivated = searchParams.get("error") === "deactivated";
+  const [error, setError] = useState<string | null>(
+    deactivated ? "Обліковий запис деактивовано. Зверніться до адміністратора." : null
+  );
   const [loading, setLoading] = useState(false);
 
   function submitOnEnter(e: KeyboardEvent<HTMLInputElement>) {
@@ -26,15 +29,33 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
+    const { data: signInData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
     if (authError) {
+      setLoading(false);
       setError(authError.message);
       return;
     }
+
+    if (signInData.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_active")
+        .eq("id", signInData.user.id)
+        .single();
+
+      if (profile && profile.is_active === false) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        setError("Обліковий запис деактивовано. Зверніться до адміністратора.");
+        return;
+      }
+    }
+
+    setLoading(false);
     const next = searchParams.get("next") ?? "/app/leads";
     router.push(next);
     router.refresh();

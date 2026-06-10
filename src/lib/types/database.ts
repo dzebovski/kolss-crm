@@ -1,4 +1,31 @@
-export type UserRole = "super_admin" | "office_admin" | "office_member";
+export type UserRole =
+  | "super_admin"
+  | "curator"
+  | "office_admin"
+  | "office_member";
+
+export type Profile = {
+  id: string;
+  role: UserRole;
+  display_name: string | null;
+  is_active: boolean;
+  deactivated_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserOfficeMembership = {
+  user_id: string;
+  office_id: string;
+  offices?: Office;
+};
+
+export type AdminUserRow = {
+  id: string;
+  email: string;
+  profile: Profile;
+  offices: Office[];
+};
 
 export type Office = {
   id: string;

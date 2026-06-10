@@ -17,14 +17,14 @@ import { Button } from "./ui/button";
 
 type Props = {
   offices: Office[];
-  isSuperAdmin: boolean;
+  canPickOffice: boolean;
   defaultOfficeId: string;
   defaultCityRegion: string;
 };
 
 export function CreateLeadForm({
   offices,
-  isSuperAdmin,
+  canPickOffice,
   defaultOfficeId,
   defaultCityRegion,
 }: Props) {
@@ -77,7 +77,7 @@ export function CreateLeadForm({
           name="office_id"
           required
           value={selectedOfficeId}
-          disabled={!isSuperAdmin}
+          disabled={!canPickOffice}
           onChange={(e) => onOfficeChange(e.target.value)}
           className={fieldClass}
         >

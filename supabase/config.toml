@@ -1,5 +1,5 @@
-[project]
-id = "kolss-crm"
+# Local project id (folder name); remote ref is set via `supabase link`
+project_id = "kolss-crm"
 
 [api]
 enabled = true

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LeadsFilter } from "@/components/leads-filter";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
+import { hasOfficeLeadFilter } from "@/lib/roles";
 import type { Lead, Office, PipelineStage } from "@/lib/types/database";
 
 export default async function LeadsPage({
@@ -27,6 +28,7 @@ export default async function LeadsPage({
     : { data: null };
 
   const isSuperAdmin = profile?.role === "super_admin";
+  const canFilterLeads = hasOfficeLeadFilter(profile?.role);
 
   const [{ data: allOffices }, { data: stages }, { data: memberships }] =
     await Promise.all([
@@ -50,7 +52,8 @@ export default async function LeadsPage({
           .filter(Boolean);
 
   const filterOffices = isSuperAdmin ? offices : userOffices;
-  const selectedOfficeId = isSuperAdmin
+  const canUseOfficeFilter = canFilterLeads && filterOffices.length > 1;
+  const selectedOfficeId = canUseOfficeFilter
     ? officeFilter ?? ""
     : (userOffices[0]?.id ?? "");
 
@@ -60,7 +63,7 @@ export default async function LeadsPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (isSuperAdmin && officeFilter) {
+  if (canFilterLeads && officeFilter) {
     query = query.eq("office_id", officeFilter);
   }
 
@@ -114,8 +117,8 @@ export default async function LeadsPage({
             <LeadsFilter
               offices={filterOffices}
               currentOfficeId={selectedOfficeId}
-              disabled={!isSuperAdmin}
-              showAllOption={isSuperAdmin}
+              disabled={!canUseOfficeFilter}
+              showAllOption={canUseOfficeFilter}
             />
           </Suspense>
           <Link
@@ -135,7 +138,7 @@ export default async function LeadsPage({
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--background)]">
             <tr>
-              {isSuperAdmin && (
+              {canFilterLeads && (
                 <th className="px-4 py-3 font-medium">Офіс</th>
               )}
               <th className="px-4 py-3 font-medium">Статус</th>
@@ -153,7 +156,7 @@ export default async function LeadsPage({
                   key={lead.id}
                   className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--background)]"
                 >
-                  {isSuperAdmin && (
+                  {canFilterLeads && (
                     <td className="px-4 py-3">
                       <span className="inline-flex rounded-md bg-[var(--background)] px-2 py-0.5 text-xs font-medium">
                         {officeLabel(lead)}

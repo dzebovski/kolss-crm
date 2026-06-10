@@ -27,11 +27,28 @@ npx supabase db push
 
 ### 2. Користувачі
 
-1. У Supabase Dashboard → Authentication → Users створіть користувачів.
-2. У таблиці `profiles` встановіть `role`:
-   - `super_admin` — доступ до всіх офісів
-   - `office_admin` / `office_member` — лише свій офіс
-3. Додайте рядки в `user_office_memberships` (`user_id`, `office_id`) для не-super-admin.
+**Ролі:**
+
+| Роль | Доступ |
+|------|--------|
+| `super_admin` | Усі офіси, адмін-панель користувачів (`/app/admin/users`). Створюється вручну в Supabase. |
+| `curator` | Ліди кількох офісів (Київ + Варшава), фільтр по офісу. Без адмін-панелі. |
+| `office_admin` | Ліди офісів з membership. |
+| `office_member` | Ліди офісів з membership. |
+
+**Перший super_admin (вручну):**
+
+1. Supabase Dashboard → Authentication → Users — створіть користувача.
+2. SQL Editor — `profiles.role = 'super_admin'`.
+
+**Інші користувачі** — через адмін-панель CRM (потрібен `SUPABASE_SERVICE_ROLE_KEY` у `.env.local`):
+
+- `/app/admin/users` — список по офісах
+- `/app/admin/users/new` — створення (email, пароль, роль, офіси)
+- `/app/admin/users/[id]` — редагування, деактивація
+- `/app/admin/users/deactivated` — деактивовані (відновлення або видалення назавжди)
+
+Деактивація блокує вхід; дані профілю зберігаються до повного видалення.
 
 ### 3. Джерела імпорту (Google Sheets → CRM)
 

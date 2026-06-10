@@ -40,6 +40,7 @@ export default async function NewLeadPage() {
 
   const defaultOffice = userOffices[0] ?? offices[0];
   const formOffices = isSuperAdmin ? offices : userOffices;
+  const canPickOffice = isSuperAdmin || userOffices.length > 1;
 
   return (
     <div>
@@ -47,7 +48,7 @@ export default async function NewLeadPage() {
       {defaultOffice ? (
         <CreateLeadForm
           offices={formOffices}
-          isSuperAdmin={isSuperAdmin}
+          canPickOffice={canPickOffice}
           defaultOfficeId={defaultOffice.id}
           defaultCityRegion={defaultCityForOffice(defaultOffice)}
         />
