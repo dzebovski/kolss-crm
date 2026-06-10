@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { LeadActionsPanel } from "@/components/lead-actions-panel";
 import { LeadCommentForm } from "@/components/lead-comment-form";
-import { LeadStatusForm } from "@/components/lead-status-form";
 import {
   labelForCode,
   PRODUCT_INTEREST_OPTIONS,
   PROJECT_STAGE_OPTIONS,
 } from "@/lib/lead-form-options";
+import { sourceSystemLabel } from "@/lib/source-labels";
 import type {
   Lead,
   LeadAttachment,
   LeadComment,
   LeadEvent,
-  PipelineStage,
+  LeadStatus,
 } from "@/lib/types/database";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
@@ -29,7 +30,7 @@ export default async function LeadDetailPage({
 
   const [
     { data: lead, error },
-    { data: stages },
+    { data: statuses },
     { data: comments },
     { data: events },
     { data: attachments },
@@ -39,7 +40,7 @@ export default async function LeadDetailPage({
       .select("*, offices(code, name_uk)")
       .eq("id", id)
       .single(),
-    supabase.from("pipeline_stages").select("*").order("sort_order"),
+    supabase.from("lead_statuses").select("*").order("sort_order"),
     supabase
       .from("lead_comments")
       .select("*, profiles(display_name)")
@@ -64,19 +65,19 @@ export default async function LeadDetailPage({
   };
   const officeJoined = Array.isArray(l.offices) ? l.offices[0] : l.offices;
   const officeCode = officeJoined?.code;
-  const stageList = (stages as PipelineStage[]) ?? [];
-  const stageMap = new Map(stageList.map((s) => [s.code, s.label_uk]));
+  const statusList = (statuses as LeadStatus[]) ?? [];
+  const statusMap = new Map(statusList.map((s) => [s.code, s.label_uk]));
 
   const attachmentRows = (attachments as LeadAttachment[]) ?? [];
   const signedAttachments = attachmentRows.length
     ? await getLeadAttachmentSignedUrls(supabase, attachmentRows)
     : [];
 
-  const commentsByStage = new Map<string, LeadComment[]>();
+  const commentsByStatus = new Map<string, LeadComment[]>();
   for (const c of (comments as LeadComment[]) ?? []) {
-    const list = commentsByStage.get(c.pipeline_stage) ?? [];
+    const list = commentsByStatus.get(c.lead_status) ?? [];
     list.push(c);
-    commentsByStage.set(c.pipeline_stage, list);
+    commentsByStatus.set(c.lead_status, list);
   }
 
   return (
@@ -90,7 +91,8 @@ export default async function LeadDetailPage({
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{l.name ?? "Лід"}</h1>
         <p className="text-sm text-[var(--muted)]">
-          {l.offices?.name_uk} · {l.source_system} · {l.external_lead_id}
+          {officeJoined?.name_uk} · {sourceSystemLabel(l.source_system)} ·{" "}
+          {l.external_lead_id}
         </p>
       </div>
 
@@ -123,26 +125,12 @@ export default async function LeadDetailPage({
             </p>
           )}
           <p>
-            <span className="text-[var(--muted)]">Етап проєкту:</span>{" "}
+            <span className="text-[var(--muted)]">Етап проєкту (intake):</span>{" "}
             {labelForCode(
               PROJECT_STAGE_OPTIONS,
               l.project_stage_source,
               officeCode
             )}
-          </p>
-          {l.stage_comment && (
-            <p>
-              <span className="text-[var(--muted)]">Коментар до етапу:</span>{" "}
-              {l.stage_comment}
-            </p>
-          )}
-          <p>
-            <span className="text-[var(--muted)]">Платформа:</span>{" "}
-            {l.platform ?? "—"}
-          </p>
-          <p>
-            <span className="text-[var(--muted)]">Кампанія:</span>{" "}
-            {l.campaign_name ?? "—"}
           </p>
           {signedAttachments.length > 0 && (
             <div className="border-t border-[var(--border)] pt-3">
@@ -165,38 +153,42 @@ export default async function LeadDetailPage({
           )}
         </div>
 
-        <div className="space-y-4">
-          <LeadStatusForm
-            leadId={l.id}
-            currentStatus={l.crm_status}
-            stages={stageList}
-          />
-        </div>
+        <LeadActionsPanel
+          leadId={l.id}
+          leadStatus={l.lead_status}
+          statuses={statusList}
+          convertedProjectId={l.converted_project_id}
+          callbackDueAt={l.callback_due_at}
+          officeCode={officeCode}
+        />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <LeadCommentForm
           leadId={l.id}
-          currentStage={l.crm_status}
-          stages={stageList}
+          currentStatus={l.lead_status}
+          statuses={statusList}
         />
 
         <div className="space-y-4">
-          <h2 className="font-medium">Коментарі по етапах</h2>
-          {stageList.map((stage) => {
-            const items = commentsByStage.get(stage.code);
+          <h2 className="font-medium">Коментарі</h2>
+          {statusList.map((status) => {
+            const items = commentsByStatus.get(status.code);
             if (!items?.length) return null;
             return (
               <div
-                key={stage.code}
+                key={status.code}
                 className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
               >
                 <h3 className="mb-2 text-sm font-medium text-[var(--accent)]">
-                  {stage.label_uk}
+                  {status.label_uk}
                 </h3>
                 <ul className="space-y-2 text-sm">
                   {items.map((c) => (
-                    <li key={c.id} className="border-t border-[var(--border)] pt-2 first:border-0 first:pt-0">
+                    <li
+                      key={c.id}
+                      className="border-t border-[var(--border)] pt-2 first:border-0 first:pt-0"
+                    >
                       <p>{c.body}</p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
                         {c.profiles?.display_name ?? "Користувач"} ·{" "}
@@ -208,7 +200,7 @@ export default async function LeadDetailPage({
               </div>
             );
           })}
-          {![...commentsByStage.values()].some((a) => a.length) && (
+          {![...commentsByStatus.values()].some((a) => a.length) && (
             <p className="text-sm text-[var(--muted)]">Коментарів ще немає.</p>
           )}
         </div>
@@ -226,11 +218,18 @@ export default async function LeadDetailPage({
               {ev.event_type === "status_change" && ev.new_value && (
                 <span>
                   {" "}
-                  → {String((ev.new_value as { crm_status?: string }).crm_status)}
-                  {stageMap.get(
-                    String((ev.new_value as { crm_status?: string }).crm_status)
+                  →{" "}
+                  {String(
+                    (ev.new_value as { lead_status?: string }).lead_status ??
+                      (ev.new_value as { crm_status?: string }).crm_status
+                  )}
+                  {statusMap.get(
+                    String(
+                      (ev.new_value as { lead_status?: string }).lead_status ??
+                        (ev.new_value as { crm_status?: string }).crm_status
+                    )
                   )
-                    ? ` (${stageMap.get(String((ev.new_value as { crm_status?: string }).crm_status))})`
+                    ? ` (${statusMap.get(String((ev.new_value as { lead_status?: string }).lead_status))})`
                     : ""}
                 </span>
               )}

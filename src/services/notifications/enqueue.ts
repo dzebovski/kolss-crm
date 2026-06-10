@@ -4,7 +4,10 @@ import { getSlackWebhookUrl, telegramConfigured } from "@/lib/office-env";
 
 export async function enqueueLeadNotifications(
   supabase: SupabaseClient,
-  lead: Pick<Lead, "id" | "name" | "phone" | "email" | "product_interest" | "office_id">,
+  lead: Pick<
+    Lead,
+    "id" | "name" | "phone" | "email" | "product_interest" | "office_id" | "source_system"
+  >,
   offices?: { code: string } | null
 ) {
   const officeCode = offices?.code;
@@ -18,6 +21,7 @@ export async function enqueueLeadNotifications(
     phone: lead.phone,
     email: lead.email,
     product_interest: lead.product_interest,
+    source_system: lead.source_system,
     office_code: officeCode,
     crm_url: siteUrl ? `${siteUrl}/app/leads/${lead.id}` : null,
   };

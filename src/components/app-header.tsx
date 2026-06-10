@@ -27,6 +27,9 @@ export async function AppHeader() {
             <Link href="/app/leads" className="hover:text-[var(--foreground)]">
               Ліди
             </Link>
+            <Link href="/app/projects" className="hover:text-[var(--foreground)]">
+              Проєкти
+            </Link>
             <Link
               href="/app/leads/new"
               className="hover:text-[var(--foreground)]"

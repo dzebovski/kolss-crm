@@ -64,10 +64,10 @@ export async function upsertMappedLead(
       office_id: source.office_id,
       source_system: mapped.source_system,
       external_lead_id: mapped.external_lead_id,
-      crm_status: "new",
+      lead_status: "new",
       ...marketingFields,
     })
-    .select("id, name, phone, email, product_interest, office_id")
+    .select("id, name, phone, email, product_interest, office_id, source_system")
     .single();
 
   if (insertErr) throw insertErr;

@@ -2,17 +2,19 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { LeadsFilter } from "@/components/leads-filter";
+import { hasActiveCallbackReminder } from "@/lib/callback-reminder";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { hasOfficeLeadFilter } from "@/lib/roles";
-import type { Lead, Office, PipelineStage } from "@/lib/types/database";
+import type { Lead, LeadStatus, Office } from "@/lib/types/database";
 
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string }>;
+  searchParams: Promise<{ office?: string; status?: string; callback?: string }>;
 }) {
-  const { office: officeFilter } = await searchParams;
+  const { office: officeFilter, status: statusFilter, callback: callbackFilter } =
+    await searchParams;
   const supabase = await createClient();
 
   const {
@@ -30,10 +32,10 @@ export default async function LeadsPage({
   const isSuperAdmin = profile?.role === "super_admin";
   const canFilterLeads = hasOfficeLeadFilter(profile?.role);
 
-  const [{ data: allOffices }, { data: stages }, { data: memberships }] =
+  const [{ data: allOffices }, { data: statuses }, { data: memberships }] =
     await Promise.all([
       supabase.from("offices").select("*").eq("is_active", true).order("code"),
-      supabase.from("pipeline_stages").select("*").order("sort_order"),
+      supabase.from("lead_statuses").select("*").order("sort_order"),
       user && !isSuperAdmin
         ? supabase
             .from("user_office_memberships")
@@ -67,10 +69,18 @@ export default async function LeadsPage({
     query = query.eq("office_id", officeFilter);
   }
 
+  if (statusFilter) {
+    query = query.eq("lead_status", statusFilter);
+  }
+
+  if (callbackFilter === "1") {
+    query = query.not("callback_due_at", "is", null);
+  }
+
   const { data: leads, error } = await query;
 
-  const stageMap = new Map(
-    (stages as PipelineStage[] | null)?.map((s) => [s.code, s.label_uk]) ?? []
+  const statusMap = new Map(
+    (statuses as LeadStatus[] | null)?.map((s) => [s.code, s.label_uk]) ?? []
   );
 
   const officeNameById = new Map(offices.map((o) => [o.id, o.name_uk]));
@@ -101,10 +111,10 @@ export default async function LeadsPage({
       offices?: { code?: string } | { code?: string }[] | null;
     }
   ) {
-    const isNew = !lead.crm_status || lead.crm_status === "new";
+    const isNew = lead.lead_status === "new";
     const ts = isNew
       ? lead.created_at
-      : lead.crm_status_changed_at ?? lead.created_at;
+      : lead.lead_status_changed_at ?? lead.created_at;
     return formatLeadDateTime(ts, officeCodeForLead(lead));
   }
 
@@ -112,7 +122,7 @@ export default async function LeadsPage({
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Ліди</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Suspense>
             <LeadsFilter
               offices={filterOffices}
@@ -128,6 +138,30 @@ export default async function LeadsPage({
             + Новий лід
           </Link>
         </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2 text-sm">
+        <Link
+          href="/app/leads"
+          className={`rounded-lg px-3 py-1 ${!statusFilter ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
+        >
+          Усі
+        </Link>
+        {(statuses as LeadStatus[] | null)?.map((s) => (
+          <Link
+            key={s.code}
+            href={`/app/leads?status=${s.code}${officeFilter ? `&office=${officeFilter}` : ""}`}
+            className={`rounded-lg px-3 py-1 ${statusFilter === s.code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
+          >
+            {s.label_uk}
+          </Link>
+        ))}
+        <Link
+          href={`/app/leads?callback=1${officeFilter ? `&office=${officeFilter}` : ""}`}
+          className={`rounded-lg px-3 py-1 ${callbackFilter === "1" ? "bg-amber-100 text-amber-900 font-medium" : "border border-[var(--border)]"}`}
+        >
+          Передзвонити
+        </Link>
       </div>
 
       {error && (
@@ -165,8 +199,17 @@ export default async function LeadsPage({
                   )}
                   <td className="px-4 py-3">
                     <div className="font-medium">
-                      {stageMap.get(lead.crm_status) ?? lead.crm_status ?? "—"}
+                      {statusMap.get(lead.lead_status) ?? lead.lead_status ?? "—"}
                     </div>
+                    {lead.lead_status === "in_progress" &&
+                      hasActiveCallbackReminder(lead.callback_due_at) && (
+                        <div className="mt-1">
+                          <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                            Передзвонити до{" "}
+                            {formatLeadDateTime(lead.callback_due_at!, code)}
+                          </span>
+                        </div>
+                      )}
                     <div className="mt-0.5 text-xs text-[var(--muted)]">
                       {statusTimeLabel(lead)}
                     </div>
@@ -189,8 +232,7 @@ export default async function LeadsPage({
         </table>
         {!leads?.length && !error && (
           <p className="px-4 py-8 text-center text-[var(--muted)]">
-            Лідів ще немає. Увімкніть імпорт з Google Sheets або створіть лід
-            вручну.
+            Лідів ще немає.
           </p>
         )}
       </div>

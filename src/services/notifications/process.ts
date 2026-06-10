@@ -50,16 +50,25 @@ async function sendSlack(
   }
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  meta_lead_ads: "Facebook Forms",
+  google_ads: "Google Ads",
+  site_form: "Site Form",
+  manual: "Вручну",
+};
+
 function buildMessage(payload: Record<string, unknown>): string {
+  const source = String(payload.source_system ?? "");
+  const sourceLabel = SOURCE_LABELS[source] ?? (source || "—");
   const lines = [
-    "🆕 Новий лід у KOLSS CRM",
-    `Офіс: ${payload.office_code ?? "—"}`,
-    `Імʼя: ${payload.name ?? "—"}`,
-    `Телефон: ${payload.phone ?? "—"}`,
-    `Email: ${payload.email ?? "—"}`,
-    `Запит: ${payload.product_interest ?? "—"}`,
+    "🔔 Нова заявка!",
+    `👤 Ім'я: ${payload.name ?? "—"}`,
+    `📞 Тел: ${payload.phone ?? "—"}`,
+    `🌐 Джерело: ${sourceLabel}`,
   ];
-  if (payload.crm_url) lines.push(`Картка: ${payload.crm_url}`);
+  if (payload.crm_url) {
+    lines.push(`🔗 Посилання на CRM: ${payload.crm_url}`);
+  }
   return lines.join("\n");
 }
 

@@ -35,7 +35,7 @@ export type Office = {
   is_active: boolean;
 };
 
-export type PipelineStage = {
+export type LeadStatus = {
   code: string;
   label_uk: string;
   label_pl: string;
@@ -43,14 +43,33 @@ export type PipelineStage = {
   is_terminal: boolean;
 };
 
+export type ProjectStage = {
+  code: string;
+  label_uk: string;
+  label_pl: string;
+  sort_order: number;
+  is_terminal: boolean;
+};
+
+export type LossReason = {
+  code: string;
+  label_uk: string;
+  label_pl: string;
+};
+
 export type Lead = {
   id: string;
   office_id: string;
   source_system: string;
   external_lead_id: string;
-  crm_status: string;
-  crm_status_changed_at: string | null;
+  lead_status: string;
+  lead_status_changed_at: string | null;
   assigned_to: string | null;
+  loss_reason: string | null;
+  converted_project_id: string | null;
+  estimated_budget: number | null;
+  our_quote: number | null;
+  callback_due_at: string | null;
   name: string | null;
   phone: string | null;
   email: string | null;
@@ -74,11 +93,73 @@ export type Lead = {
   offices?: Office;
 };
 
+export type Project = {
+  id: string;
+  lead_id: string;
+  office_id: string;
+  status: string;
+  status_changed_at: string;
+  last_activity_at: string;
+  product_type: string | null;
+  product_details: string | null;
+  estimated_budget: number | null;
+  our_quote: number | null;
+  is_only_measurement: boolean;
+  advance_paid: number | null;
+  final_paid: number | null;
+  loss_reason: string | null;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string;
+  leads?: Lead;
+  offices?: Office;
+};
+
+export type ProjectComment = {
+  id: string;
+  project_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  profiles?: { display_name: string | null };
+};
+
+export type ProjectAttachment = {
+  id: string;
+  project_id: string;
+  uploaded_by: string;
+  document_type: "contract" | "act" | "other";
+  file_name: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+};
+
+export type TaskEntityType = "lead" | "project";
+export type TaskPriority = "normal" | "high";
+export type TaskSource = "manual" | "auto_no_answer" | "auto_inactivity";
+export type TaskStatus = "open" | "done" | "canceled";
+
+export type Task = {
+  id: string;
+  entity_type: TaskEntityType;
+  entity_id: string;
+  assignee_id: string | null;
+  title: string;
+  due_at: string;
+  priority: TaskPriority;
+  source: TaskSource;
+  status: TaskStatus;
+  created_at: string;
+  completed_at: string | null;
+};
+
 export type LeadComment = {
   id: string;
   lead_id: string;
   author_id: string;
-  pipeline_stage: string;
+  lead_status: string;
   body: string;
   created_at: string;
   profiles?: { display_name: string | null };
