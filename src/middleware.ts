@@ -41,22 +41,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isApp && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_active")
-      .eq("id", user.id)
-      .single();
-
-    if (profile && profile.is_active === false) {
-      await supabase.auth.signOut();
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/login";
-      redirectUrl.searchParams.set("error", "deactivated");
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
   if (isLogin && user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/app/leads";

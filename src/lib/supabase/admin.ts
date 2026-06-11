@@ -1,12 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  getSupabaseAnonKey,
-  getSupabaseServiceRoleKey,
-  getSupabaseUrl,
-} from "./env";
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "./env";
 
 export function createAdminClient() {
-  const key = getSupabaseServiceRoleKey() ?? getSupabaseAnonKey();
+  const key = getSupabaseServiceRoleKey();
+  if (!key) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY не знайдено. Додайте ключ у .env.local і перезапустіть npm run dev"
+    );
+  }
   return createClient(getSupabaseUrl(), key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

@@ -1,20 +1,10 @@
 import Link from "next/link";
+import { getSessionContext } from "@/lib/auth";
 import { roleLabel } from "@/lib/roles";
-import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
 
 export async function AppHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("display_name, role")
-        .eq("id", user.id)
-        .single()
-    : { data: null };
+  const ctx = await getSessionContext();
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--card)]">
@@ -31,12 +21,18 @@ export async function AppHeader() {
               Проєкти
             </Link>
             <Link
+              href="/app/dashboard"
+              className="hover:text-[var(--foreground)]"
+            >
+              Дашборд
+            </Link>
+            <Link
               href="/app/leads/new"
               className="hover:text-[var(--foreground)]"
             >
               Новий лід
             </Link>
-            {profile?.role === "super_admin" && (
+            {ctx?.profile.role === "super_admin" && (
               <Link
                 href="/app/admin/users"
                 className="hover:text-[var(--foreground)]"
@@ -48,8 +44,8 @@ export async function AppHeader() {
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-[var(--muted)]">
-            {profile?.display_name ?? user?.email}
-            {profile?.role ? ` · ${roleLabel(profile.role)}` : ""}
+            {ctx?.profile.display_name ?? ctx?.user.email}
+            {ctx?.profile.role ? ` · ${roleLabel(ctx.profile.role)}` : ""}
           </span>
           <SignOutButton />
         </div>

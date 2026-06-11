@@ -1,88 +1,67 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { LeadsFilter } from "@/components/leads-filter";
+import { listLeads } from "@/lib/db/leads";
 import { hasActiveCallbackReminder } from "@/lib/callback-reminder";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
-import { hasOfficeLeadFilter } from "@/lib/roles";
-import type { Lead, LeadStatus, Office } from "@/lib/types/database";
+import { getLeadStatuses } from "@/lib/queries/reference-data";
+import { resolveUserOfficeContext } from "@/lib/queries/user-offices";
+import type { Lead } from "@/lib/types/database";
+
+const PAGE_SIZE = 50;
 
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string; status?: string; callback?: string }>;
+  searchParams: Promise<{
+    office?: string;
+    status?: string;
+    callback?: string;
+    page?: string;
+  }>;
 }) {
-  const { office: officeFilter, status: statusFilter, callback: callbackFilter } =
-    await searchParams;
-  const supabase = await createClient();
-
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    office: officeFilter,
+    status: statusFilter,
+    callback: callbackFilter,
+    page: pageParam,
+  } = await searchParams;
 
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single()
-    : { data: null };
+  const ctx = await requireAuth();
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
 
-  const isSuperAdmin = profile?.role === "super_admin";
-  const canFilterLeads = hasOfficeLeadFilter(profile?.role);
+  const officeCtx = await resolveUserOfficeContext(ctx);
+  const {
+    canFilter: canFilterLeads,
+    filterOffices,
+    canUseOfficeFilter,
+    userOffices,
+    offices,
+  } = officeCtx;
 
-  const [{ data: allOffices }, { data: statuses }, { data: memberships }] =
-    await Promise.all([
-      supabase.from("offices").select("*").eq("is_active", true).order("code"),
-      supabase.from("lead_statuses").select("*").order("sort_order"),
-      user && !isSuperAdmin
-        ? supabase
-            .from("user_office_memberships")
-            .select("office_id, offices(*)")
-            .eq("user_id", user.id)
-        : Promise.resolve({ data: null }),
-    ]);
-
-  const offices = (allOffices as Office[]) ?? [];
-  const officeCodeById = new Map(offices.map((o) => [o.id, o.code]));
-  const userOffices: Office[] =
-    isSuperAdmin || !memberships
-      ? offices
-      : memberships
-          .map((m) => m.offices as unknown as Office)
-          .filter(Boolean);
-
-  const filterOffices = isSuperAdmin ? offices : userOffices;
-  const canUseOfficeFilter = canFilterLeads && filterOffices.length > 1;
   const selectedOfficeId = canUseOfficeFilter
     ? officeFilter ?? ""
     : (userOffices[0]?.id ?? "");
 
-  let query = supabase
-    .from("leads")
-    .select("*, offices(code, name_uk)")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const [statuses, leadsResult] = await Promise.all([
+    getLeadStatuses(),
+    listLeads({
+      officeId: canFilterLeads && officeFilter ? officeFilter : undefined,
+      status: statusFilter,
+      callbackOnly: callbackFilter === "1",
+      offset,
+      limit: PAGE_SIZE,
+    }),
+  ]);
 
-  if (canFilterLeads && officeFilter) {
-    query = query.eq("office_id", officeFilter);
-  }
+  const { data: leads, error, count } = leadsResult;
+  const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
 
-  if (statusFilter) {
-    query = query.eq("lead_status", statusFilter);
-  }
-
-  if (callbackFilter === "1") {
-    query = query.not("callback_due_at", "is", null);
-  }
-
-  const { data: leads, error } = await query;
-
-  const statusMap = new Map(
-    (statuses as LeadStatus[] | null)?.map((s) => [s.code, s.label_uk]) ?? []
-  );
-
+  const statusMap = new Map(statuses.map((s) => [s.code, s.label_uk]));
+  const officeCodeById = new Map(offices.map((o) => [o.id, o.code]));
   const officeNameById = new Map(offices.map((o) => [o.id, o.name_uk]));
 
   function officeLabel(
@@ -118,6 +97,16 @@ export default async function LeadsPage({
     return formatLeadDateTime(ts, officeCodeForLead(lead));
   }
 
+  function pageHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (officeFilter) params.set("office", officeFilter);
+    if (statusFilter) params.set("status", statusFilter);
+    if (callbackFilter === "1") params.set("callback", "1");
+    if (nextPage > 1) params.set("page", String(nextPage));
+    const q = params.toString();
+    return q ? `/app/leads?${q}` : "/app/leads";
+  }
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -147,7 +136,7 @@ export default async function LeadsPage({
         >
           Усі
         </Link>
-        {(statuses as LeadStatus[] | null)?.map((s) => (
+        {statuses.map((s) => (
           <Link
             key={s.code}
             href={`/app/leads?status=${s.code}${officeFilter ? `&office=${officeFilter}` : ""}`}
@@ -236,6 +225,32 @@ export default async function LeadsPage({
           </p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-[var(--muted)]">
+            Сторінка {page} з {totalPages}
+          </span>
+          <div className="flex gap-2">
+            {page > 1 && (
+              <Link
+                href={pageHref(page - 1)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
+              >
+                Попередня
+              </Link>
+            )}
+            {page < totalPages && (
+              <Link
+                href={pageHref(page + 1)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
+              >
+                Наступна
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

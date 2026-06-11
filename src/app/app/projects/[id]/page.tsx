@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getProjectStages } from "@/lib/queries/reference-data";
 import { ProjectCommentForm } from "@/components/project-comment-form";
 import { ProjectForm } from "@/components/project-form";
 import { ProjectStatusForm } from "@/components/project-status-form";
@@ -25,16 +26,16 @@ export default async function ProjectDetailPage({
 
   const [
     { data: project, error },
-    { data: stages },
+    stages,
     { data: comments },
     { data: attachments },
   ] = await Promise.all([
     supabase
       .from("projects")
-      .select("*, leads!lead_id(*), offices(code, name_uk)")
+      .select("*, leads!lead_id(name, phone, email), offices(code, name_uk)")
       .eq("id", id)
       .single(),
-    supabase.from("project_stages").select("*").order("sort_order"),
+    getProjectStages(),
     supabase
       .from("project_comments")
       .select("*, profiles(display_name)")

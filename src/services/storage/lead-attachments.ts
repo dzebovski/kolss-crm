@@ -70,17 +70,16 @@ export async function getLeadAttachmentSignedUrls(
   attachments: { storage_path: string; file_name: string }[]
 ) {
   const storage = createStorageAdminClient();
-  const results: { file_name: string; url: string }[] = [];
 
-  for (const att of attachments) {
-    const { data, error } = await storage.storage
-      .from(LEAD_ATTACHMENTS_BUCKET)
-      .createSignedUrl(att.storage_path, 3600);
+  const signed = await Promise.all(
+    attachments.map(async (att) => {
+      const { data, error } = await storage.storage
+        .from(LEAD_ATTACHMENTS_BUCKET)
+        .createSignedUrl(att.storage_path, 3600);
+      if (error || !data?.signedUrl) return null;
+      return { file_name: att.file_name, url: data.signedUrl };
+    })
+  );
 
-    if (!error && data?.signedUrl) {
-      results.push({ file_name: att.file_name, url: data.signedUrl });
-    }
-  }
-
-  return results;
+  return signed.filter((r): r is { file_name: string; url: string } => r !== null);
 }

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { canManageUsers } from "@/lib/roles";
@@ -8,7 +9,7 @@ export type SessionContext = {
   profile: Profile;
 };
 
-export async function getSessionContext(): Promise<SessionContext | null> {
+export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +28,7 @@ export async function getSessionContext(): Promise<SessionContext | null> {
     user: { id: user.id, email: user.email },
     profile: profile as Profile,
   };
-}
+});
 
 export async function requireAuth(): Promise<SessionContext> {
   const ctx = await getSessionContext();
@@ -52,4 +53,12 @@ export async function assertSuperAdminAction(): Promise<SessionContext> {
 
 export function isSuperAdminRole(role: UserRole | string | null | undefined): boolean {
   return role === "super_admin";
+}
+
+export async function getAuthenticatedActionContext() {
+  const ctx = await getSessionContext();
+  if (!ctx) throw new Error("Unauthorized");
+  if (!ctx.profile.is_active) throw new Error("Обліковий запис деактивовано");
+  const supabase = await createClient();
+  return { supabase, user: ctx.user, profile: ctx.profile };
 }

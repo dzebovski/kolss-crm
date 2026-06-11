@@ -152,10 +152,45 @@ export async function listUsers(activeOnly = true): Promise<AdminUserRow[]> {
   );
 }
 
+async function fetchAdminUserById(userId: string): Promise<AdminUserRow | null> {
+  requireServiceRole();
+  const admin = createAdminClient();
+
+  const { data: authData, error: authError } =
+    await admin.auth.admin.getUserById(userId);
+  if (authError || !authData.user) return null;
+
+  const [{ data: profile }, { data: memberships }, { data: offices }] =
+    await Promise.all([
+      admin.from("profiles").select("*").eq("id", userId).single(),
+      admin
+        .from("user_office_memberships")
+        .select("user_id, office_id, offices(*)")
+        .eq("user_id", userId),
+      admin.from("offices").select("*").eq("is_active", true),
+    ]);
+
+  if (!profile) return null;
+
+  const officeOrder = new Map(
+    (offices as Office[] | null)?.map((o, i) => [o.id, i]) ?? []
+  );
+  const userOffices = (memberships ?? [])
+    .map((m) => m.offices as unknown as Office | null)
+    .filter((o): o is Office => o !== null)
+    .sort((a, b) => (officeOrder.get(a.id) ?? 0) - (officeOrder.get(b.id) ?? 0));
+
+  return {
+    id: authData.user.id,
+    email: authData.user.email ?? "",
+    profile: profile as Profile,
+    offices: userOffices,
+  };
+}
+
 export async function getUserById(userId: string): Promise<AdminUserRow | null> {
   await assertSuperAdminAction();
-  const rows = await fetchAllAdminUsers();
-  return rows.find((r) => r.id === userId) ?? null;
+  return fetchAdminUserById(userId);
 }
 
 export async function createUser(formData: FormData) {

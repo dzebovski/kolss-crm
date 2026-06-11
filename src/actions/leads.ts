@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateLeads, revalidateProjects } from "@/lib/cache-tags";
+import { getAuthenticatedActionContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { enqueueLeadNotifications } from "@/services/notifications/enqueue";
@@ -10,15 +11,6 @@ import { formatSupabaseError } from "@/lib/errors";
 import { uploadLeadAttachments } from "@/services/storage/lead-attachments";
 import { computeNoAnswerDueAt } from "@/lib/task-scheduling";
 import { parseOptionalDecimal, validatePriceLossFields } from "@/lib/validation";
-
-async function getAuthenticatedUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return { supabase, user };
-}
 
 async function insertLeadEvent(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -38,46 +30,20 @@ async function insertLeadEvent(
 }
 
 export async function takeLeadInProgress(leadId: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
-  const { data: lead } = await supabase
-    .from("leads")
-    .select("lead_status, assigned_to")
-    .eq("id", leadId)
-    .single();
+  const { error } = await supabase.rpc("take_lead_in_progress", {
+    p_lead_id: leadId,
+    p_actor_id: user.id,
+  });
 
-  if (!lead) throw new Error("Lead not found");
-  if (lead.lead_status !== "new" && lead.lead_status !== "in_progress") {
-    throw new Error("Лід уже закритий");
-  }
+  if (error) throw new Error(error.message);
 
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      lead_status: "in_progress",
-      lead_status_changed_at: now,
-      assigned_to: lead.assigned_to ?? user.id,
-    })
-    .eq("id", leadId);
-
-  if (error) throw error;
-
-  await insertLeadEvent(
-    supabase,
-    leadId,
-    user.id,
-    "status_change",
-    { lead_status: lead.lead_status },
-    { lead_status: "in_progress" }
-  );
-
-  revalidatePath(`/app/leads/${leadId}`);
-  revalidatePath("/app/leads");
+  revalidateLeads(leadId);
 }
 
 export async function recordNoAnswer(leadId: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: lead } = await supabase
     .from("leads")
@@ -108,12 +74,11 @@ export async function recordNoAnswer(leadId: string) {
     callback_due_at: dueAt.toISOString(),
   });
 
-  revalidatePath(`/app/leads/${leadId}`);
-  revalidatePath("/app/leads");
+  revalidateLeads(leadId);
 }
 
 export async function clearCallbackDue(leadId: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: lead } = await supabase
     .from("leads")
@@ -135,8 +100,7 @@ export async function clearCallbackDue(leadId: string) {
     lead_status: lead.lead_status,
   });
 
-  revalidatePath(`/app/leads/${leadId}`);
-  revalidatePath("/app/leads");
+  revalidateLeads(leadId);
 }
 
 export async function markLeadFailed(
@@ -145,7 +109,7 @@ export async function markLeadFailed(
   estimatedBudget?: string,
   ourQuote?: string
 ) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
   if (!lossReason) throw new Error("Оберіть причину відмови");
 
   const budget = parseOptionalDecimal(estimatedBudget);
@@ -153,46 +117,21 @@ export async function markLeadFailed(
   const priceErr = validatePriceLossFields(lossReason, budget, quote);
   if (priceErr) throw new Error(priceErr);
 
-  const { data: lead } = await supabase
-    .from("leads")
-    .select("lead_status")
-    .eq("id", leadId)
-    .single();
+  const { error } = await supabase.rpc("mark_lead_failed", {
+    p_lead_id: leadId,
+    p_actor_id: user.id,
+    p_loss_reason: lossReason,
+    p_estimated_budget: budget,
+    p_our_quote: quote,
+  });
 
-  if (!lead) throw new Error("Lead not found");
-  if (lead.lead_status === "converted" || lead.lead_status === "failed") {
-    throw new Error("Лід уже закритий");
-  }
+  if (error) throw new Error(error.message);
 
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      lead_status: "failed",
-      lead_status_changed_at: now,
-      loss_reason: lossReason,
-      estimated_budget: budget,
-      our_quote: quote,
-    })
-    .eq("id", leadId);
-
-  if (error) throw error;
-
-  await insertLeadEvent(
-    supabase,
-    leadId,
-    user.id,
-    "status_change",
-    { lead_status: lead.lead_status },
-    { lead_status: "failed", loss_reason: lossReason }
-  );
-
-  revalidatePath(`/app/leads/${leadId}`);
-  revalidatePath("/app/leads");
+  revalidateLeads(leadId);
 }
 
 export async function convertLeadToProject(leadId: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: lead } = await supabase
     .from("leads")
@@ -256,10 +195,8 @@ export async function convertLeadToProject(leadId: string) {
     { lead_status: "converted", project_id: project.id }
   );
 
-  revalidatePath(`/app/leads/${leadId}`);
-  revalidatePath("/app/leads");
-  revalidatePath(`/app/projects/${project.id}`);
-  revalidatePath("/app/projects");
+  revalidateLeads(leadId);
+  revalidateProjects(project.id);
 
   return project.id;
 }
@@ -269,7 +206,7 @@ export async function addLeadComment(
   leadStatus: string,
   body: string
 ) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
   if (!body.trim()) throw new Error("Коментар порожній");
 
   const { error } = await supabase.from("lead_comments").insert({
@@ -280,7 +217,7 @@ export async function addLeadComment(
   });
 
   if (error) throw error;
-  revalidatePath(`/app/leads/${leadId}`);
+  revalidateLeads(leadId);
 }
 
 async function resolveOfficeIdForCreate(
@@ -329,7 +266,7 @@ function parseRecordedAt(formData: FormData): string {
 }
 
 export async function createManualLead(formData: FormData) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const requestedOfficeId = str(formData, "office_id");
   if (!requestedOfficeId) throw new Error("Оберіть офіс");
@@ -411,14 +348,9 @@ export async function createManualLead(formData: FormData) {
   }
 
   const admin = createAdminClient();
-  const { data: office } = await admin
-    .from("offices")
-    .select("code")
-    .eq("id", lead.office_id)
-    .single();
-  await enqueueLeadNotifications(admin, lead, office);
+  await enqueueLeadNotifications(admin, lead, officeRow ?? null);
   await processPendingNotifications(admin);
 
-  revalidatePath("/app/leads");
+  revalidateLeads();
   return lead.id;
 }

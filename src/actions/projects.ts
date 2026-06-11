@@ -1,20 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateProjects } from "@/lib/cache-tags";
+import { getAuthenticatedActionContext } from "@/lib/auth";
+import { getProjectStages } from "@/lib/queries/reference-data";
 import { createClient } from "@/lib/supabase/server";
 import { productDetailsRequired } from "@/lib/crm-options";
 import { parseOptionalDecimal, validatePriceLossFields } from "@/lib/validation";
 import { uploadProjectAttachments } from "@/services/storage/project-attachments";
 import type { ProjectDocumentType } from "@/lib/crm-options";
-
-async function getAuthenticatedUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return { supabase, user };
-}
 
 function str(fd: FormData, key: string): string | undefined {
   const v = fd.get(key);
@@ -34,7 +27,7 @@ function filesFromFormData(fd: FormData, key: string): File[] {
 }
 
 export async function updateProject(projectId: string, formData: FormData) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: project } = await supabase
     .from("projects")
@@ -44,11 +37,8 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   if (!project) throw new Error("Project not found");
 
-  const { data: stage } = await supabase
-    .from("project_stages")
-    .select("is_terminal")
-    .eq("code", project.status)
-    .single();
+  const stages = await getProjectStages();
+  const stage = stages.find((s) => s.code === project.status);
 
   if (stage?.is_terminal) {
     throw new Error("Закритий проєкт не можна редагувати");
@@ -102,12 +92,11 @@ export async function updateProject(projectId: string, formData: FormData) {
     );
   }
 
-  revalidatePath(`/app/projects/${projectId}`);
-  revalidatePath("/app/projects");
+  revalidateProjects(projectId);
 }
 
 export async function updateProjectStatus(projectId: string, newStatus: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: project } = await supabase
     .from("projects")
@@ -141,12 +130,11 @@ export async function updateProjectStatus(projectId: string, newStatus: string) 
     body: `Статус змінено: ${project.status} → ${newStatus}`,
   });
 
-  revalidatePath(`/app/projects/${projectId}`);
-  revalidatePath("/app/projects");
+  revalidateProjects(projectId);
 }
 
 export async function completeMeasurementOnly(projectId: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
 
   const { data: project } = await supabase
     .from("projects")
@@ -180,8 +168,7 @@ export async function completeMeasurementOnly(projectId: string) {
     body: "Проєкт закрито: тільки замір",
   });
 
-  revalidatePath(`/app/projects/${projectId}`);
-  revalidatePath("/app/projects");
+  revalidateProjects(projectId);
 }
 
 export async function archiveProject(
@@ -190,7 +177,7 @@ export async function archiveProject(
   estimatedBudget?: string,
   ourQuote?: string
 ) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
   if (!lossReason) throw new Error("Оберіть причину відмови");
 
   const { data: project } = await supabase
@@ -228,12 +215,11 @@ export async function archiveProject(
     body: `Проєкт архівовано. Причина: ${lossReason}`,
   });
 
-  revalidatePath(`/app/projects/${projectId}`);
-  revalidatePath("/app/projects");
+  revalidateProjects(projectId);
 }
 
 export async function addProjectComment(projectId: string, body: string) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
   if (!body.trim()) throw new Error("Коментар порожній");
 
   const now = new Date().toISOString();
@@ -250,7 +236,7 @@ export async function addProjectComment(projectId: string, body: string) {
     .update({ last_activity_at: now })
     .eq("id", projectId);
 
-  revalidatePath(`/app/projects/${projectId}`);
+  revalidateProjects(projectId);
 }
 
 export async function uploadProjectDocument(
@@ -258,7 +244,7 @@ export async function uploadProjectDocument(
   formData: FormData,
   documentType: ProjectDocumentType
 ) {
-  const { supabase, user } = await getAuthenticatedUser();
+  const { supabase, user } = await getAuthenticatedActionContext();
   const { data: project } = await supabase
     .from("projects")
     .select("office_id")
@@ -284,5 +270,5 @@ export async function uploadProjectDocument(
     .update({ last_activity_at: new Date().toISOString() })
     .eq("id", projectId);
 
-  revalidatePath(`/app/projects/${projectId}`);
+  revalidateProjects(projectId);
 }

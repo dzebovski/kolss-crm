@@ -1,77 +1,54 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { LeadsFilter } from "@/components/leads-filter";
+import { listProjects } from "@/lib/db/projects";
 import { labelForCrmCode, PRODUCT_TYPE_OPTIONS } from "@/lib/crm-options";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { isApprovalStale } from "@/lib/project-reminder";
-import { hasOfficeLeadFilter } from "@/lib/roles";
-import type { Office, Project, ProjectStage } from "@/lib/types/database";
+import { getProjectStages } from "@/lib/queries/reference-data";
+import { resolveUserOfficeContext } from "@/lib/queries/user-offices";
+import type { Project } from "@/lib/types/database";
+
+const PAGE_SIZE = 50;
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string; status?: string }>;
+  searchParams: Promise<{ office?: string; status?: string; page?: string }>;
 }) {
-  const { office: officeFilter, status: statusFilter } = await searchParams;
-  const supabase = await createClient();
+  const { office: officeFilter, status: statusFilter, page: pageParam } =
+    await searchParams;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const ctx = await requireAuth();
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
 
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single()
-    : { data: null };
+  const { canFilter, filterOffices, canUseOfficeFilter } =
+    await resolveUserOfficeContext(ctx);
 
-  const isSuperAdmin = profile?.role === "super_admin";
-  const canFilter = hasOfficeLeadFilter(profile?.role);
+  const [stages, projectsResult] = await Promise.all([
+    getProjectStages(),
+    listProjects({
+      officeId: canFilter && officeFilter ? officeFilter : undefined,
+      status: statusFilter,
+      offset,
+      limit: PAGE_SIZE,
+    }),
+  ]);
 
-  const [{ data: allOffices }, { data: stages }, { data: memberships }] =
-    await Promise.all([
-      supabase.from("offices").select("*").eq("is_active", true).order("code"),
-      supabase.from("project_stages").select("*").order("sort_order"),
-      user && !isSuperAdmin
-        ? supabase
-            .from("user_office_memberships")
-            .select("office_id, offices(*)")
-            .eq("user_id", user.id)
-        : Promise.resolve({ data: null }),
-    ]);
+  const { data: projects, error, count } = projectsResult;
+  const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
+  const stageMap = new Map(stages.map((s) => [s.code, s.label_uk]));
 
-  const offices = (allOffices as Office[]) ?? [];
-  const userOffices: Office[] =
-    isSuperAdmin || !memberships
-      ? offices
-      : memberships
-          .map((m) => m.offices as unknown as Office)
-          .filter(Boolean);
-
-  const filterOffices = isSuperAdmin ? offices : userOffices;
-  const canUseOfficeFilter = canFilter && filterOffices.length > 1;
-
-  let query = supabase
-    .from("projects")
-    .select("*, leads!lead_id(name, phone), offices(code, name_uk)")
-    .order("updated_at", { ascending: false })
-    .limit(100);
-
-  if (canFilter && officeFilter) {
-    query = query.eq("office_id", officeFilter);
+  function pageHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (officeFilter) params.set("office", officeFilter);
+    if (statusFilter) params.set("status", statusFilter);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    const q = params.toString();
+    return q ? `/app/projects?${q}` : "/app/projects";
   }
-  if (statusFilter) {
-    query = query.eq("status", statusFilter);
-  }
-
-  const { data: projects, error } = await query;
-
-  const stageMap = new Map(
-    (stages as ProjectStage[] | null)?.map((s) => [s.code, s.label_uk]) ?? []
-  );
 
   return (
     <div>
@@ -96,8 +73,8 @@ export default async function ProjectsPage({
         >
           Усі
         </Link>
-        {(stages as ProjectStage[] | null)
-          ?.filter((s) => !s.is_terminal || s.code === "completed")
+        {stages
+          .filter((s) => !s.is_terminal || s.code === "completed")
           .map((s) => (
             <Link
               key={s.code}
@@ -173,6 +150,32 @@ export default async function ProjectsPage({
           </p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-[var(--muted)]">
+            Сторінка {page} з {totalPages}
+          </span>
+          <div className="flex gap-2">
+            {page > 1 && (
+              <Link
+                href={pageHref(page - 1)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
+              >
+                Попередня
+              </Link>
+            )}
+            {page < totalPages && (
+              <Link
+                href={pageHref(page + 1)}
+                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
+              >
+                Наступна
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

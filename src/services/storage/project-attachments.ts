@@ -81,25 +81,23 @@ export async function getProjectAttachmentSignedUrls(
   }[]
 ) {
   const storage = createStorageAdminClient();
-  const results: {
-    file_name: string;
-    url: string;
-    document_type: string;
-  }[] = [];
 
-  for (const att of attachments) {
-    const { data, error } = await storage.storage
-      .from(PROJECT_ATTACHMENTS_BUCKET)
-      .createSignedUrl(att.storage_path, 3600);
-
-    if (!error && data?.signedUrl) {
-      results.push({
+  const signed = await Promise.all(
+    attachments.map(async (att) => {
+      const { data, error } = await storage.storage
+        .from(PROJECT_ATTACHMENTS_BUCKET)
+        .createSignedUrl(att.storage_path, 3600);
+      if (error || !data?.signedUrl) return null;
+      return {
         file_name: att.file_name,
         url: data.signedUrl,
         document_type: att.document_type,
-      });
-    }
-  }
+      };
+    })
+  );
 
-  return results;
+  return signed.filter(
+    (r): r is { file_name: string; url: string; document_type: string } =>
+      r !== null
+  );
 }

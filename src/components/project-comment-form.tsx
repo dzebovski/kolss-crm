@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { addProjectComment } from "@/actions/projects";
 import { Button } from "./ui/button";
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function ProjectCommentForm({ projectId }: Props) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -21,6 +23,7 @@ export function ProjectCommentForm({ projectId }: Props) {
         startTransition(async () => {
           await addProjectComment(projectId, body);
           form.reset();
+          router.refresh();
         });
       }}
     >

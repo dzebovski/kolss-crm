@@ -17,6 +17,9 @@ export type ImportBatchResult = {
   rowsSkipped: number;
 };
 
+const EXISTING_LOOKUP_CHUNK = 100;
+const UPDATE_CONCURRENCY = 8;
+
 function marketingFieldsFromMapped(mapped: MappedLeadRow) {
   return {
     name: mapped.name,
@@ -79,6 +82,115 @@ export async function upsertMappedLead(
   return "created";
 }
 
+async function fetchExistingLeadIds(
+  supabase: SupabaseClient,
+  sourceSystem: string,
+  externalIds: string[]
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  for (let i = 0; i < externalIds.length; i += EXISTING_LOOKUP_CHUNK) {
+    const chunk = externalIds.slice(i, i + EXISTING_LOOKUP_CHUNK);
+    const { data } = await supabase
+      .from("leads")
+      .select("id, external_lead_id")
+      .eq("source_system", sourceSystem)
+      .in("external_lead_id", chunk);
+    for (const row of data ?? []) {
+      map.set(row.external_lead_id, row.id);
+    }
+  }
+  return map;
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>
+) {
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      await fn(items[i]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
+  );
+}
+
+async function batchUpsertMappedLeads(
+  supabase: SupabaseClient,
+  source: ImportSourceWithOffice,
+  mappedRows: MappedLeadRow[]
+): Promise<{ created: number; updated: number; skipped: number }> {
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  const valid = mappedRows.filter((m) => {
+    if (m.isTestLead) {
+      skipped++;
+      return false;
+    }
+    return true;
+  });
+
+  if (valid.length === 0) return { created, updated, skipped };
+
+  const sourceSystem = valid[0].source_system;
+  const existingByExternalId = await fetchExistingLeadIds(
+    supabase,
+    sourceSystem,
+    valid.map((m) => m.external_lead_id)
+  );
+
+  const toInsert: MappedLeadRow[] = [];
+  const toUpdate: { id: string; mapped: MappedLeadRow }[] = [];
+
+  for (const mapped of valid) {
+    const existingId = existingByExternalId.get(mapped.external_lead_id);
+    if (existingId) {
+      toUpdate.push({ id: existingId, mapped });
+    } else {
+      toInsert.push(mapped);
+    }
+  }
+
+  for (let i = 0; i < toInsert.length; i += EXISTING_LOOKUP_CHUNK) {
+    const chunk = toInsert.slice(i, i + EXISTING_LOOKUP_CHUNK);
+    const { data: inserted, error } = await supabase
+      .from("leads")
+      .insert(
+        chunk.map((mapped) => ({
+          office_id: source.office_id,
+          source_system: mapped.source_system,
+          external_lead_id: mapped.external_lead_id,
+          lead_status: "new",
+          ...marketingFieldsFromMapped(mapped),
+        }))
+      )
+      .select("id, name, phone, email, product_interest, office_id, source_system");
+
+    if (error) throw error;
+
+    for (const row of inserted ?? []) {
+      created++;
+      await enqueueLeadNotifications(supabase, row, source.offices ?? null);
+    }
+  }
+
+  await runWithConcurrency(toUpdate, UPDATE_CONCURRENCY, async ({ id, mapped }) => {
+    await supabase
+      .from("leads")
+      .update(marketingFieldsFromMapped(mapped))
+      .eq("id", id);
+    updated++;
+  });
+
+  return { created, updated, skipped };
+}
+
 export async function processWebhookImport(
   supabase: SupabaseClient,
   source: ImportSourceWithOffice,
@@ -92,7 +204,7 @@ export async function processWebhookImport(
 
   if (runErr || !run) throw runErr ?? new Error("Failed to create import run");
 
-  let rowsProcessed = 0;
+  const rowsProcessed = rows.length;
   let rowsCreated = 0;
   let rowsUpdated = 0;
   let rowsSkipped = 0;
@@ -100,20 +212,23 @@ export async function processWebhookImport(
   const officeCode = source.offices?.code ?? "kyiv";
 
   try {
-    for (let i = 0; i < rows.length; i++) {
-      rowsProcessed++;
-      const mapped = mapLeadRecord(rows[i], {
+    const mappedRows = rows.map((row, i) =>
+      mapLeadRecord(row, {
         rowNumber: i + 1,
         spreadsheetId: source.spreadsheet_id,
         sheetName: source.sheet_name,
         officeCode,
-      });
+      })
+    );
 
-      const result = await upsertMappedLead(supabase, source, mapped);
-      if (result === "created") rowsCreated++;
-      else if (result === "updated") rowsUpdated++;
-      else rowsSkipped++;
-    }
+    const batchResult = await batchUpsertMappedLeads(
+      supabase,
+      source,
+      mappedRows
+    );
+    rowsCreated = batchResult.created;
+    rowsUpdated = batchResult.updated;
+    rowsSkipped = batchResult.skipped;
 
     await supabase
       .from("lead_import_sources")
