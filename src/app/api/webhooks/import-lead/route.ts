@@ -54,8 +54,7 @@ export async function POST(request: NextRequest) {
     const notifications = await processPendingNotifications(supabase);
     return NextResponse.json({ ok: true, ...result, notifications });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Import failed";
-    console.error("[webhooks/import-lead]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[webhooks/import-lead]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

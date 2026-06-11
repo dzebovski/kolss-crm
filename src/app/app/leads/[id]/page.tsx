@@ -114,7 +114,7 @@ export default async function LeadDetailPage({
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <LeadCommentForm leadId={l.id} currentStatus={l.lead_status} />
+        <LeadCommentForm leadId={l.id} />
 
         <Suspense fallback={<SectionSkeleton />}>
           <LeadDetailComments leadId={l.id} officeCode={officeCode} />

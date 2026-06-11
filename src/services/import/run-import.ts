@@ -7,8 +7,6 @@ export type ImportSourceWithOffice = ImportSource & {
   offices?: { code: string } | null;
 };
 
-export type UpsertResult = "created" | "updated" | "skipped";
-
 export type ImportBatchResult = {
   sourceId: string;
   rowsProcessed: number;
@@ -38,48 +36,6 @@ function marketingFieldsFromMapped(mapped: MappedLeadRow) {
     is_organic: mapped.is_organic,
     raw_payload: mapped.raw_payload,
   };
-}
-
-export async function upsertMappedLead(
-  supabase: SupabaseClient,
-  source: ImportSourceWithOffice,
-  mapped: MappedLeadRow
-): Promise<UpsertResult> {
-  if (mapped.isTestLead) return "skipped";
-
-  const { data: existing } = await supabase
-    .from("leads")
-    .select("id")
-    .eq("source_system", mapped.source_system)
-    .eq("external_lead_id", mapped.external_lead_id)
-    .maybeSingle();
-
-  const marketingFields = marketingFieldsFromMapped(mapped);
-
-  if (existing) {
-    await supabase.from("leads").update(marketingFields).eq("id", existing.id);
-    return "updated";
-  }
-
-  const { data: created, error: insertErr } = await supabase
-    .from("leads")
-    .insert({
-      office_id: source.office_id,
-      source_system: mapped.source_system,
-      external_lead_id: mapped.external_lead_id,
-      lead_status: "new",
-      ...marketingFields,
-    })
-    .select("id, name, phone, email, product_interest, office_id, source_system")
-    .single();
-
-  if (insertErr) throw insertErr;
-
-  if (created) {
-    await enqueueLeadNotifications(supabase, created, source.offices ?? null);
-  }
-
-  return "created";
 }
 
 async function fetchExistingLeadIds(
@@ -123,10 +79,16 @@ async function batchUpsertMappedLeads(
   supabase: SupabaseClient,
   source: ImportSourceWithOffice,
   mappedRows: MappedLeadRow[]
-): Promise<{ created: number; updated: number; skipped: number }> {
+): Promise<{
+  created: number;
+  updated: number;
+  skipped: number;
+  updateErrors: string[];
+}> {
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  const updateErrors: string[] = [];
 
   const valid = mappedRows.filter((m) => {
     if (m.isTestLead) {
@@ -136,7 +98,7 @@ async function batchUpsertMappedLeads(
     return true;
   });
 
-  if (valid.length === 0) return { created, updated, skipped };
+  if (valid.length === 0) return { created, updated, skipped, updateErrors };
 
   const sourceSystem = valid[0].source_system;
   const existingByExternalId = await fetchExistingLeadIds(
@@ -181,14 +143,18 @@ async function batchUpsertMappedLeads(
   }
 
   await runWithConcurrency(toUpdate, UPDATE_CONCURRENCY, async ({ id, mapped }) => {
-    await supabase
+    const { error } = await supabase
       .from("leads")
       .update(marketingFieldsFromMapped(mapped))
       .eq("id", id);
+    if (error) {
+      updateErrors.push(`lead ${id}: ${error.message}`);
+      return;
+    }
     updated++;
   });
 
-  return { created, updated, skipped };
+  return { created, updated, skipped, updateErrors };
 }
 
 export async function processWebhookImport(
@@ -229,6 +195,17 @@ export async function processWebhookImport(
     rowsCreated = batchResult.created;
     rowsUpdated = batchResult.updated;
     rowsSkipped = batchResult.skipped;
+
+    if (batchResult.updateErrors.length > 0) {
+      console.error(
+        "[import] lead update failures:",
+        batchResult.updateErrors
+      );
+      // Marks the run as failed with partial counters preserved.
+      throw new Error(
+        `${batchResult.updateErrors.length} lead update(s) failed; first: ${batchResult.updateErrors[0]}`
+      );
+    }
 
     await supabase
       .from("lead_import_sources")

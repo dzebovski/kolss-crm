@@ -858,7 +858,19 @@ export type Database = {
         Args: { target_office_id: string }
         Returns: boolean
       }
+      convert_lead_to_project: { Args: { p_lead_id: string }; Returns: string }
+      get_dashboard_stats: { Args: never; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
+      mark_lead_failed: {
+        Args: {
+          p_estimated_budget?: number
+          p_lead_id: string
+          p_loss_reason: string
+          p_our_quote?: number
+        }
+        Returns: undefined
+      }
+      take_lead_in_progress: { Args: { p_lead_id: string }; Returns: undefined }
       user_office_ids: { Args: never; Returns: string[] }
     }
     Enums: {

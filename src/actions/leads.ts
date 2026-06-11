@@ -8,8 +8,10 @@ import { enqueueLeadNotifications } from "@/services/notifications/enqueue";
 import { processPendingNotifications } from "@/services/notifications/process";
 import { normalizePhoneForOffice } from "@/lib/phone";
 import { formatSupabaseError } from "@/lib/errors";
+import { filesFromFormData, str } from "@/lib/form-data";
 import { uploadLeadAttachments } from "@/services/storage/lead-attachments";
 import { computeNoAnswerDueAt } from "@/lib/task-scheduling";
+import type { Json } from "@/lib/types/supabase";
 import { parseOptionalDecimal, validatePriceLossFields } from "@/lib/validation";
 
 async function insertLeadEvent(
@@ -17,8 +19,8 @@ async function insertLeadEvent(
   leadId: string,
   actorId: string,
   eventType: string,
-  oldValue?: Record<string, unknown> | null,
-  newValue?: Record<string, unknown> | null
+  oldValue?: Json | null,
+  newValue?: Json | null
 ) {
   await supabase.from("lead_events").insert({
     lead_id: leadId,
@@ -30,11 +32,10 @@ async function insertLeadEvent(
 }
 
 export async function takeLeadInProgress(leadId: string) {
-  const { supabase, user } = await getAuthenticatedActionContext();
+  const { supabase } = await getAuthenticatedActionContext();
 
   const { error } = await supabase.rpc("take_lead_in_progress", {
     p_lead_id: leadId,
-    p_actor_id: user.id,
   });
 
   if (error) throw new Error(error.message);
@@ -109,7 +110,7 @@ export async function markLeadFailed(
   estimatedBudget?: string,
   ourQuote?: string
 ) {
-  const { supabase, user } = await getAuthenticatedActionContext();
+  const { supabase } = await getAuthenticatedActionContext();
   if (!lossReason) throw new Error("Оберіть причину відмови");
 
   const budget = parseOptionalDecimal(estimatedBudget);
@@ -119,10 +120,9 @@ export async function markLeadFailed(
 
   const { error } = await supabase.rpc("mark_lead_failed", {
     p_lead_id: leadId,
-    p_actor_id: user.id,
     p_loss_reason: lossReason,
-    p_estimated_budget: budget,
-    p_our_quote: quote,
+    p_estimated_budget: budget ?? undefined,
+    p_our_quote: quote ?? undefined,
   });
 
   if (error) throw new Error(error.message);
@@ -131,88 +131,38 @@ export async function markLeadFailed(
 }
 
 export async function convertLeadToProject(leadId: string) {
+  const { supabase } = await getAuthenticatedActionContext();
+
+  const { data: projectId, error } = await supabase.rpc(
+    "convert_lead_to_project",
+    { p_lead_id: leadId }
+  );
+
+  if (error) throw new Error(error.message);
+  if (!projectId) throw new Error("Не вдалося створити проєкт");
+
+  revalidateLeads(leadId);
+  revalidateProjects(projectId);
+
+  return projectId;
+}
+
+export async function addLeadComment(leadId: string, body: string) {
   const { supabase, user } = await getAuthenticatedActionContext();
+  if (!body.trim()) throw new Error("Коментар порожній");
 
   const { data: lead } = await supabase
     .from("leads")
-    .select("*")
+    .select("lead_status")
     .eq("id", leadId)
     .single();
 
   if (!lead) throw new Error("Lead not found");
-  if (lead.lead_status === "converted") {
-    throw new Error("Проєкт уже створено");
-  }
-  if (lead.lead_status === "failed") {
-    throw new Error("Невдалий лід не можна конвертувати");
-  }
-
-  const now = new Date().toISOString();
-  const productType = lead.product_interest || null;
-
-  const { data: project, error: projectErr } = await supabase
-    .from("projects")
-    .insert({
-      lead_id: leadId,
-      office_id: lead.office_id,
-      status: "needs_discovery",
-      status_changed_at: now,
-      last_activity_at: now,
-      product_type: productType,
-      product_details:
-        productType === "home_furniture" || productType === "other"
-          ? lead.order_comment
-          : null,
-      assigned_to: lead.assigned_to ?? user.id,
-    })
-    .select("id")
-    .single();
-
-  if (projectErr || !project) {
-    throw new Error(
-      formatSupabaseError(projectErr, "Не вдалося створити проєкт")
-    );
-  }
-
-  const { error: leadErr } = await supabase
-    .from("leads")
-    .update({
-      lead_status: "converted",
-      lead_status_changed_at: now,
-      converted_project_id: project.id,
-      assigned_to: lead.assigned_to ?? user.id,
-    })
-    .eq("id", leadId);
-
-  if (leadErr) throw leadErr;
-
-  await insertLeadEvent(
-    supabase,
-    leadId,
-    user.id,
-    "converted_to_project",
-    { lead_status: lead.lead_status },
-    { lead_status: "converted", project_id: project.id }
-  );
-
-  revalidateLeads(leadId);
-  revalidateProjects(project.id);
-
-  return project.id;
-}
-
-export async function addLeadComment(
-  leadId: string,
-  leadStatus: string,
-  body: string
-) {
-  const { supabase, user } = await getAuthenticatedActionContext();
-  if (!body.trim()) throw new Error("Коментар порожній");
 
   const { error } = await supabase.from("lead_comments").insert({
     lead_id: leadId,
     author_id: user.id,
-    lead_status: leadStatus,
+    lead_status: lead.lead_status,
     body: body.trim(),
   });
 
@@ -242,18 +192,6 @@ async function resolveOfficeIdForCreate(
   if (allowed.includes(requestedOfficeId)) return requestedOfficeId;
   if (allowed.length === 1) return allowed[0];
   throw new Error("Немає доступу до цього офісу");
-}
-
-function str(fd: FormData, key: string): string | undefined {
-  const v = fd.get(key);
-  if (typeof v !== "string" || !v.trim()) return undefined;
-  return v.trim();
-}
-
-function filesFromFormData(fd: FormData): File[] {
-  return fd
-    .getAll("attachments")
-    .filter((f): f is File => f instanceof File && f.size > 0);
 }
 
 function parseRecordedAt(formData: FormData): string {

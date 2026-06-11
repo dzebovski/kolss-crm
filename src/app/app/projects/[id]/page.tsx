@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getProjectAttachments,
+  getProjectById,
+  getProjectComments,
+} from "@/lib/db/projects";
 import { getProjectStages } from "@/lib/queries/reference-data";
 import { ProjectCommentForm } from "@/components/project-comment-form";
 import { ProjectForm } from "@/components/project-form";
@@ -30,35 +35,15 @@ export default async function ProjectDetailPage({
     { data: comments },
     { data: attachments },
   ] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("*, leads!lead_id(name, phone, email), offices(code, name_uk)")
-      .eq("id", id)
-      .single(),
+    getProjectById(id),
     getProjectStages(),
-    supabase
-      .from("project_comments")
-      .select("*, profiles(display_name)")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("project_attachments")
-      .select("*")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false }),
+    getProjectComments(id),
+    getProjectAttachments(id),
   ]);
 
   if (error || !project) notFound();
 
-  const p = project as Project & {
-    leads: {
-      name: string | null;
-      phone: string | null;
-      email: string | null;
-    };
-    offices: { code: string; name_uk: string } | { code: string; name_uk: string }[];
-  };
-
+  const p = project;
   const office = Array.isArray(p.offices) ? p.offices[0] : p.offices;
   const officeCode = office?.code;
   const stageList = (stages as ProjectStage[]) ?? [];
@@ -73,7 +58,9 @@ export default async function ProjectDetailPage({
   const contractFiles = signedAttachments.filter(
     (a) => a.document_type === "contract"
   );
-  const actFiles = signedAttachments.filter((a) => a.document_type === "act");
+  const actFiles = signedAttachments.filter(
+    (a) => a.document_type === "act"
+  );
   const otherFiles = signedAttachments.filter(
     (a) => a.document_type === "other"
   );
@@ -133,7 +120,7 @@ export default async function ProjectDetailPage({
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
           <h2 className="mb-4 font-medium">Дані проєкту</h2>
           <ProjectForm
-            project={p}
+            project={p as Project}
             officeCode={officeCode}
             readOnly={isTerminal}
           />

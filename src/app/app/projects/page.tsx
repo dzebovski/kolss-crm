@@ -41,6 +41,15 @@ export default async function ProjectsPage({
   const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
   const stageMap = new Map(stages.map((s) => [s.code, s.label_uk]));
 
+  function filterHref(overrides?: { status?: string }) {
+    const params = new URLSearchParams();
+    if (officeFilter) params.set("office", officeFilter);
+    const status = overrides?.status ?? statusFilter;
+    if (status) params.set("status", status);
+    const q = params.toString();
+    return q ? `/app/projects?${q}` : "/app/projects";
+  }
+
   function pageHref(nextPage: number) {
     const params = new URLSearchParams();
     if (officeFilter) params.set("office", officeFilter);
@@ -61,6 +70,7 @@ export default async function ProjectsPage({
               currentOfficeId={officeFilter ?? ""}
               disabled={false}
               showAllOption
+              basePath="/app/projects"
             />
           </Suspense>
         )}
@@ -68,7 +78,7 @@ export default async function ProjectsPage({
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link
-          href="/app/projects"
+          href={filterHref()}
           className={`rounded-lg px-3 py-1 ${!statusFilter ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
         >
           Усі
@@ -78,7 +88,7 @@ export default async function ProjectsPage({
           .map((s) => (
             <Link
               key={s.code}
-              href={`/app/projects?status=${s.code}${officeFilter ? `&office=${officeFilter}` : ""}`}
+              href={filterHref({ status: s.code })}
               className={`rounded-lg px-3 py-1 ${statusFilter === s.code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
             >
               {s.label_uk}

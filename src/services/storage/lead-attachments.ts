@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types/supabase";
 import { createStorageAdminClient } from "@/lib/supabase/admin";
 import {
   LEAD_ATTACHMENTS_BUCKET,
@@ -8,14 +9,35 @@ import {
 } from "@/lib/attachments";
 import { formatSupabaseError } from "@/lib/errors";
 
+type Client = SupabaseClient<Database>;
+
+async function assertLeadAccess(supabase: Client, leadId: string) {
+  const { data: lead, error } = await supabase
+    .from("leads")
+    .select("id, office_id")
+    .eq("id", leadId)
+    .single();
+
+  if (error || !lead) {
+    throw new Error("Lead not found or access denied");
+  }
+
+  return lead;
+}
+
 export async function uploadLeadAttachments(
-  supabase: SupabaseClient,
+  supabase: Client,
   leadId: string,
   officeId: string,
   uploadedBy: string,
   files: File[]
 ) {
   if (!files.length) return [];
+
+  const lead = await assertLeadAccess(supabase, leadId);
+  if (lead.office_id !== officeId) {
+    throw new Error("Office mismatch for lead attachment upload");
+  }
 
   const storage = createStorageAdminClient();
   const inserted: { id: string; file_name: string }[] = [];
@@ -66,7 +88,7 @@ export async function uploadLeadAttachments(
 }
 
 export async function getLeadAttachmentSignedUrls(
-  _supabase: SupabaseClient,
+  _supabase: Client,
   attachments: { storage_path: string; file_name: string }[]
 ) {
   const storage = createStorageAdminClient();

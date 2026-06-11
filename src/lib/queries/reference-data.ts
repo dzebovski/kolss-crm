@@ -1,9 +1,11 @@
 import { unstable_cache } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { LeadStatus, Office, ProjectStage } from "@/lib/types/database";
 
+// Reference lookups are identical for all authenticated users (RLS: select using true).
+// Admin client avoids cookies() inside unstable_cache, which Next.js forbids.
 async function fetchActiveOffices(): Promise<Office[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("offices")
     .select("*")
@@ -13,7 +15,7 @@ async function fetchActiveOffices(): Promise<Office[]> {
 }
 
 async function fetchLeadStatuses(): Promise<LeadStatus[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("lead_statuses")
     .select("*")
@@ -22,7 +24,7 @@ async function fetchLeadStatuses(): Promise<LeadStatus[]> {
 }
 
 async function fetchProjectStages(): Promise<ProjectStage[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("project_stages")
     .select("*")

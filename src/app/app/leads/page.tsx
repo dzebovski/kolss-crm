@@ -97,6 +97,17 @@ export default async function LeadsPage({
     return formatLeadDateTime(ts, officeCodeForLead(lead));
   }
 
+  function filterHref(overrides?: { status?: string; callback?: string }) {
+    const params = new URLSearchParams();
+    if (officeFilter) params.set("office", officeFilter);
+    const status = overrides?.status ?? statusFilter;
+    const callback = overrides?.callback ?? callbackFilter;
+    if (status) params.set("status", status);
+    if (callback === "1") params.set("callback", "1");
+    const q = params.toString();
+    return q ? `/app/leads?${q}` : "/app/leads";
+  }
+
   function pageHref(nextPage: number) {
     const params = new URLSearchParams();
     if (officeFilter) params.set("office", officeFilter);
@@ -131,7 +142,7 @@ export default async function LeadsPage({
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link
-          href="/app/leads"
+          href={filterHref()}
           className={`rounded-lg px-3 py-1 ${!statusFilter ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
         >
           Усі
@@ -139,14 +150,14 @@ export default async function LeadsPage({
         {statuses.map((s) => (
           <Link
             key={s.code}
-            href={`/app/leads?status=${s.code}${officeFilter ? `&office=${officeFilter}` : ""}`}
+            href={filterHref({ status: s.code })}
             className={`rounded-lg px-3 py-1 ${statusFilter === s.code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
           >
             {s.label_uk}
           </Link>
         ))}
         <Link
-          href={`/app/leads?callback=1${officeFilter ? `&office=${officeFilter}` : ""}`}
+          href={filterHref({ callback: "1" })}
           className={`rounded-lg px-3 py-1 ${callbackFilter === "1" ? "bg-amber-100 text-amber-900 font-medium" : "border border-[var(--border)]"}`}
         >
           Передзвонити

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types/supabase";
 import { createStorageAdminClient } from "@/lib/supabase/admin";
 import type { ProjectDocumentType } from "@/lib/crm-options";
 import {
@@ -8,10 +9,26 @@ import {
 } from "@/lib/attachments";
 import { formatSupabaseError } from "@/lib/errors";
 
+type Client = SupabaseClient<Database>;
+
 export const PROJECT_ATTACHMENTS_BUCKET = "project-attachments";
 
+async function assertProjectAccess(supabase: Client, projectId: string) {
+  const { data: project, error } = await supabase
+    .from("projects")
+    .select("id, office_id")
+    .eq("id", projectId)
+    .single();
+
+  if (error || !project) {
+    throw new Error("Project not found or access denied");
+  }
+
+  return project;
+}
+
 export async function uploadProjectAttachments(
-  supabase: SupabaseClient,
+  supabase: Client,
   projectId: string,
   officeId: string,
   uploadedBy: string,
@@ -19,6 +36,11 @@ export async function uploadProjectAttachments(
   documentType: ProjectDocumentType = "other"
 ) {
   if (!files.length) return [];
+
+  const project = await assertProjectAccess(supabase, projectId);
+  if (project.office_id !== officeId) {
+    throw new Error("Office mismatch for project attachment upload");
+  }
 
   const storage = createStorageAdminClient();
   const inserted: { id: string; file_name: string; document_type: string }[] =
@@ -73,7 +95,7 @@ export async function uploadProjectAttachments(
 }
 
 export async function getProjectAttachmentSignedUrls(
-  _supabase: SupabaseClient,
+  _supabase: Client,
   attachments: {
     storage_path: string;
     file_name: string;

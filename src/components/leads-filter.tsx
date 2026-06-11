@@ -8,6 +8,7 @@ type Props = {
   currentOfficeId?: string;
   disabled?: boolean;
   showAllOption?: boolean;
+  basePath?: string;
 };
 
 export function LeadsFilter({
@@ -15,6 +16,7 @@ export function LeadsFilter({
   currentOfficeId,
   disabled = false,
   showAllOption = false,
+  basePath = "/app/leads",
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,7 +26,8 @@ export function LeadsFilter({
     const params = new URLSearchParams(searchParams.toString());
     if (officeId) params.set("office", officeId);
     else params.delete("office");
-    router.push(`/app/leads?${params.toString()}`);
+    params.delete("page");
+    router.push(`${basePath}?${params.toString()}`);
   }
 
   return (
@@ -32,6 +35,7 @@ export function LeadsFilter({
       value={currentOfficeId ?? ""}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
+      aria-label="Фільтр за офісом"
       className="rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-70"
     >
       {showAllOption && <option value="">Усі офіси</option>}

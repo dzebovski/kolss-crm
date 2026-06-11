@@ -3,28 +3,11 @@
 import { revalidateProjects } from "@/lib/cache-tags";
 import { getAuthenticatedActionContext } from "@/lib/auth";
 import { getProjectStages } from "@/lib/queries/reference-data";
-import { createClient } from "@/lib/supabase/server";
 import { productDetailsRequired } from "@/lib/crm-options";
+import { checkbox, filesFromFormData, str } from "@/lib/form-data";
 import { parseOptionalDecimal, validatePriceLossFields } from "@/lib/validation";
 import { uploadProjectAttachments } from "@/services/storage/project-attachments";
 import type { ProjectDocumentType } from "@/lib/crm-options";
-
-function str(fd: FormData, key: string): string | undefined {
-  const v = fd.get(key);
-  if (typeof v !== "string") return undefined;
-  return v.trim() || undefined;
-}
-
-function checkbox(fd: FormData, key: string): boolean {
-  const v = fd.get(key);
-  return v === "on" || v === "true" || v === "1";
-}
-
-function filesFromFormData(fd: FormData, key: string): File[] {
-  return fd
-    .getAll(key)
-    .filter((f): f is File => f instanceof File && f.size > 0);
-}
 
 export async function updateProject(projectId: string, formData: FormData) {
   const { supabase, user } = await getAuthenticatedActionContext();

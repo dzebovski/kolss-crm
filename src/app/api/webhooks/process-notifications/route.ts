@@ -15,8 +15,7 @@ export async function POST(request: NextRequest) {
     const result = await processPendingNotifications(supabase);
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Processing failed";
-    console.error("[webhooks/process-notifications]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[webhooks/process-notifications]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

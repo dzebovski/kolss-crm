@@ -5,6 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "./ui/button";
 
+function safeNextPath(next: string | null): string {
+  if (!next) return "/app/leads";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/app/leads";
+  return next;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,7 +62,7 @@ export function LoginForm() {
     }
 
     setLoading(false);
-    const next = searchParams.get("next") ?? "/app/leads";
+    const next = safeNextPath(searchParams.get("next"));
     router.push(next);
     router.refresh();
   }

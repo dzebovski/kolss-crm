@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types/supabase";
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from "./env";
 
 export function createAdminClient() {
@@ -8,7 +9,7 @@ export function createAdminClient() {
       "SUPABASE_SERVICE_ROLE_KEY не знайдено. Додайте ключ у .env.local і перезапустіть npm run dev"
     );
   }
-  return createClient(getSupabaseUrl(), key, {
+  return createClient<Database>(getSupabaseUrl(), key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -21,7 +22,7 @@ export function createStorageAdminClient() {
       "SUPABASE_SERVICE_ROLE_KEY не знайдено. Додайте ключ у .env.local і перезапустіть npm run dev"
     );
   }
-  return createClient(getSupabaseUrl(), key, {
+  return createClient<Database>(getSupabaseUrl(), key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
