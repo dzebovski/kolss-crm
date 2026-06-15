@@ -859,6 +859,10 @@ export type Database = {
         Returns: boolean
       }
       convert_lead_to_project: { Args: { p_lead_id: string }; Returns: string }
+      get_dashboard_overview: {
+        Args: { p_office_id?: string; p_period_days?: number }
+        Returns: Json
+      }
       get_dashboard_stats: { Args: never; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
       mark_lead_failed: {

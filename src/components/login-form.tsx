@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "./ui/button";
 
 function safeNextPath(next: string | null): string {
-  if (!next) return "/app/leads";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/app/leads";
+  if (!next) return "/app/dashboard";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/app/dashboard";
   return next;
 }
 

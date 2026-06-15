@@ -39,7 +39,7 @@ export async function requireAuth(): Promise<SessionContext> {
 
 export async function requireSuperAdmin(): Promise<SessionContext> {
   const ctx = await requireAuth();
-  if (!canManageUsers(ctx.profile.role)) redirect("/app/leads");
+  if (!canManageUsers(ctx.profile.role)) redirect("/app/dashboard");
   return ctx;
 }
 
