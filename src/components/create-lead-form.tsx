@@ -58,8 +58,8 @@ export function CreateLeadForm({
             fd.set("recorded_at", parsed.toISOString());
           }
         }
-        const id = await createManualLead(fd);
-        router.push(`/app/leads/${id}`);
+        const result = await createManualLead(fd);
+        router.push(`/app/leads/${result.leadId}`);
       } catch (err) {
         setError(formatSupabaseError(err, "Помилка створення"));
       }

@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveLocaleFromUser } from "@/lib/locale";
+import { defaultLocale, isAppLocale } from "@/i18n/config";
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -45,6 +47,37 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/app/dashboard";
     return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && isApp) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const { data: memberships } = await supabase
+      .from("user_office_memberships")
+      .select("offices(code)")
+      .eq("user_id", user.id);
+
+    const officeCodes =
+      memberships?.map((m) => {
+        const office = m.offices as { code: string } | { code: string }[] | null;
+        return Array.isArray(office) ? office[0]?.code : office?.code;
+      }).filter((c): c is string => Boolean(c)) ?? [];
+
+    const locale = profile?.role
+      ? resolveLocaleFromUser(profile.role, officeCodes)
+      : defaultLocale;
+
+    if (isAppLocale(locale)) {
+      supabaseResponse.cookies.set("kolss_locale", locale, {
+        path: "/",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
   }
 
   return supabaseResponse;

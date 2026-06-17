@@ -1,0 +1,208 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Customers",
+    "newLead": "New lead",
+    "users": "Users",
+    "design": "Design",
+    "signOut": "Sign out"
+  },
+  "common": {
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "loading": "Loading…",
+    "error": "Error",
+    "noData": "No data",
+    "office": "Office",
+    "manager": "Manager",
+    "phone": "Phone",
+    "email": "Email",
+    "name": "Name",
+    "comment": "Comment",
+    "commentRequired": "Comment is required",
+    "date": "Date",
+    "amount": "Amount",
+    "currency": "Currency",
+    "status": "Status",
+    "source": "Source",
+    "actions": "Actions",
+    "overdue": "Overdue",
+    "today": "Today",
+    "open": "Open",
+    "done": "Done",
+    "canceled": "Canceled"
+  },
+  "workflow": {
+    "status": {
+      "new": "New lead",
+      "in_work": "In work",
+      "callback_required": "Callback required",
+      "contacted": "Contacted",
+      "showroom_scheduled": "Showroom scheduled",
+      "showroom_visited": "Showroom visited",
+      "showroom_no_show": "Showroom no-show",
+      "contract_planned": "Contract planned",
+      "contract_signed": "Contract signed",
+      "prepayment_received": "Prepayment received",
+      "in_production": "In production",
+      "postpayment_received": "Postpayment received",
+      "installed": "Installed",
+      "warranty": "Warranty",
+      "bad_lead": "Bad lead"
+    },
+    "actions": {
+      "takeInWork": "Take in work",
+      "recordCall": "Record call attempt",
+      "scheduleShowroom": "Schedule showroom visit",
+      "rescheduleShowroom": "Reschedule visit",
+      "markNoShow": "Mark no-show",
+      "markVisited": "Mark visited",
+      "planContract": "Plan contract",
+      "signContract": "Sign contract",
+      "recordPrepayment": "Record prepayment",
+      "recordPostpayment": "Record postpayment",
+      "markInstalled": "Mark installed",
+      "startWarranty": "Start warranty",
+      "markBadLead": "Mark bad lead",
+      "completeTask": "Complete task",
+      "cancelTask": "Cancel task",
+      "createTask": "Create task"
+    },
+    "callResult": {
+      "reached": "Reached",
+      "no_answer": "No answer",
+      "cannot_talk": "Cannot talk now",
+      "bad_lead": "Bad lead"
+    },
+    "taskType": {
+      "callback": "Callback",
+      "showroom_no_show_followup": "Showroom no-show follow-up",
+      "showroom_visit": "Showroom visit",
+      "contract_followup": "Contract follow-up",
+      "prepayment_followup": "Prepayment follow-up",
+      "manual": "Manual task"
+    },
+    "showroomStatus": {
+      "scheduled": "Scheduled",
+      "visited": "Visited",
+      "no_show": "No-show",
+      "canceled": "Canceled",
+      "rescheduled": "Rescheduled"
+    },
+    "contractStatus": {
+      "planned": "Planned",
+      "signed": "Signed",
+      "canceled": "Canceled"
+    },
+    "paymentType": {
+      "prepayment": "Prepayment",
+      "postpayment": "Postpayment"
+    },
+    "currency": {
+      "PLN": "PLN",
+      "EUR": "EUR",
+      "USD": "USD",
+      "GBP": "GBP",
+      "UAH": "UAH"
+    },
+    "sourceChannel": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "website": "Website",
+      "other": "Other"
+    }
+  },
+  "customerCard": {
+    "title": "Customer card",
+    "contacts": "Contact & source",
+    "primaryAction": "Next action",
+    "callHistory": "Call history",
+    "tasks": "Tasks",
+    "showroom": "Showroom visits",
+    "contractPayments": "Contract & payments",
+    "production": "Production lifecycle",
+    "activity": "Activity timeline",
+    "files": "Files",
+    "nextAction": "Next action",
+    "nextDue": "Due",
+    "materials": "Materials",
+    "quotedPrice": "Quoted price",
+    "plannedAt": "Planned at",
+    "signedAt": "Signed at",
+    "paidAt": "Paid at",
+    "technicalDetails": "Technical import details",
+    "cityRegion": "City / region",
+    "productInterest": "Product interest",
+    "sourceChannel": "Source channel",
+    "sourceNote": "Source note",
+    "unassigned": "Unassigned",
+    "noOpenTasks": "No open tasks",
+    "noCalls": "No call attempts yet",
+    "noVisits": "No showroom visits yet",
+    "noContracts": "No contracts yet",
+    "noPayments": "No payments yet"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "period": "Period",
+    "days": "{count} days",
+    "leadsCreated": "Leads created",
+    "notTaken": "Not taken in work",
+    "reached": "Reached",
+    "notReached": "Not reached",
+    "reachedToday": "Reached today",
+    "notReachedToday": "Not reached today",
+    "reachedYesterday": "Reached yesterday",
+    "notReachedYesterday": "Not reached yesterday",
+    "showroomScheduled": "Showroom scheduled",
+    "showroomCompleted": "Showroom completed",
+    "contractsPlanned": "Contracts planned",
+    "contractsSigned": "Contracts signed",
+    "prepayments": "Prepayments",
+    "overdueTasks": "Overdue tasks",
+    "noContactAttempt": "No contact attempt",
+    "noShow": "No-shows",
+    "funnel": "Conversion funnel",
+    "queues": {
+      "newLeads": "New leads to take",
+      "callbacks": "Leads to call back",
+      "noShow": "Did not come to showroom",
+      "scheduledShowroom": "Scheduled for showroom",
+      "contractPrepay": "Bring to contract or prepayment"
+    }
+  },
+  "leads": {
+    "title": "Customers",
+    "new": "New customer",
+    "filterCallback": "Callback",
+    "allStatuses": "All statuses",
+    "nextTask": "Next task",
+    "assignedTo": "Assigned to",
+    "duplicateWarning": "A lead with this phone or email may already exist"
+  },
+  "roles": {
+    "super_admin": "Super admin",
+    "curator": "Curator",
+    "office_admin": "Office admin",
+    "office_member": "Manager"
+  },
+  "sourceSystem": {
+    "meta_lead_ads": "Facebook Forms",
+    "google_ads": "Google Ads",
+    "site_form": "Site form",
+    "manual": "Manual"
+  },
+  "product": {
+    "kitchen": "Kitchen",
+    "home_furniture": "Home furniture",
+    "wardrobe": "Wardrobe",
+    "other": "Other"
+  },
+  "lossReason": {
+    "spam": "Spam",
+    "not_target": "Not target",
+    "price": "Price mismatch"
+  }
+}

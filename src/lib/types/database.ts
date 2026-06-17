@@ -64,12 +64,22 @@ export type Lead = {
   external_lead_id: string;
   lead_status: string;
   lead_status_changed_at: string | null;
+  workflow_status: string;
+  workflow_status_changed_at: string | null;
   assigned_to: string | null;
   loss_reason: string | null;
   converted_project_id: string | null;
   estimated_budget: number | null;
   our_quote: number | null;
   callback_due_at: string | null;
+  source_channel: string | null;
+  source_note: string | null;
+  next_task_due_at: string | null;
+  next_task_title: string | null;
+  production_started_at: string | null;
+  postpayment_received_at: string | null;
+  installed_at: string | null;
+  warranty_started_at: string | null;
   name: string | null;
   phone: string | null;
   email: string | null;
@@ -91,6 +101,7 @@ export type Lead = {
   created_at: string;
   updated_at: string;
   offices?: Office;
+  profiles?: { display_name: string | null };
 };
 
 export type Project = {
@@ -138,7 +149,15 @@ export type ProjectAttachment = {
 
 export type TaskEntityType = "lead" | "project";
 export type TaskPriority = "normal" | "high";
-export type TaskSource = "manual" | "auto_no_answer" | "auto_inactivity";
+export type TaskSource =
+  | "manual"
+  | "auto_no_answer"
+  | "auto_inactivity"
+  | "auto_callback"
+  | "auto_showroom_no_show"
+  | "auto_showroom_visit"
+  | "auto_contract"
+  | "auto_prepayment";
 export type TaskStatus = "open" | "done" | "canceled";
 
 export type Task = {
@@ -151,8 +170,72 @@ export type Task = {
   priority: TaskPriority;
   source: TaskSource;
   status: TaskStatus;
+  task_type: TaskType | null;
+  created_by: string | null;
   created_at: string;
   completed_at: string | null;
+};
+
+export type TaskType =
+  | "callback"
+  | "showroom_no_show_followup"
+  | "showroom_visit"
+  | "contract_followup"
+  | "prepayment_followup"
+  | "manual";
+
+export type LeadContactAttempt = {
+  id: string;
+  lead_id: string;
+  manager_id: string;
+  result: string;
+  comment: string;
+  created_at: string;
+  profiles?: { display_name: string | null };
+};
+
+export type LeadShowroomVisit = {
+  id: string;
+  lead_id: string;
+  scheduled_at: string;
+  status: string;
+  comment: string | null;
+  materials: string | null;
+  quoted_price_amount: number | null;
+  quoted_price_currency: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeadContract = {
+  id: string;
+  lead_id: string;
+  planned_at: string | null;
+  signed_at: string | null;
+  status: string;
+  comment: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type LeadPayment = {
+  id: string;
+  lead_id: string;
+  payment_type: "prepayment" | "postpayment";
+  amount: number;
+  currency: string;
+  paid_at: string;
+  comment: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type WorkflowStatusRow = {
+  code: string;
+  sort_order: number;
+  category: string;
+  is_terminal: boolean;
 };
 
 export type LeadComment = {
@@ -170,6 +253,7 @@ export type LeadEvent = {
   lead_id: string;
   actor_id: string | null;
   event_type: string;
+  comment: string | null;
   old_value: Record<string, unknown> | null;
   new_value: Record<string, unknown> | null;
   created_at: string;

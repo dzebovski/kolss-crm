@@ -1,0 +1,208 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "leads": "Klienci",
+    "newLead": "Nowy lead",
+    "users": "Użytkownicy",
+    "design": "Design",
+    "signOut": "Wyloguj"
+  },
+  "common": {
+    "back": "Wstecz",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "submit": "Wyślij",
+    "loading": "Ładowanie…",
+    "error": "Błąd",
+    "noData": "Brak danych",
+    "office": "Biuro",
+    "manager": "Menedżer",
+    "phone": "Telefon",
+    "email": "Email",
+    "name": "Imię",
+    "comment": "Komentarz",
+    "commentRequired": "Komentarz jest wymagany",
+    "date": "Data",
+    "amount": "Kwota",
+    "currency": "Waluta",
+    "status": "Status",
+    "source": "Źródło",
+    "actions": "Akcje",
+    "overdue": "Po terminie",
+    "today": "Dziś",
+    "open": "Otwarte",
+    "done": "Wykonane",
+    "canceled": "Anulowane"
+  },
+  "workflow": {
+    "status": {
+      "new": "Nowe zgłoszenie",
+      "in_work": "W trakcie",
+      "callback_required": "Wymagany oddzwon",
+      "contacted": "Kontakt nawiązany",
+      "showroom_scheduled": "Wizyta zaplanowana",
+      "showroom_visited": "Wizyta odbyła się",
+      "showroom_no_show": "Nie przyszedł do showroomu",
+      "contract_planned": "Umowa zaplanowana",
+      "contract_signed": "Umowa podpisana",
+      "prepayment_received": "Zaliczka otrzymana",
+      "in_production": "W produkcji",
+      "postpayment_received": "Płatność końcowa otrzymana",
+      "installed": "Zainstalowano",
+      "warranty": "Gwarancja",
+      "bad_lead": "Nieudany lead"
+    },
+    "actions": {
+      "takeInWork": "Przejmij lead",
+      "recordCall": "Zapisz próbę kontaktu",
+      "scheduleShowroom": "Zaplanuj wizytę w showroomie",
+      "rescheduleShowroom": "Przełóż wizytę",
+      "markNoShow": "Nie przyszedł",
+      "markVisited": "Wizyta odbyła się",
+      "planContract": "Zaplanuj umowę",
+      "signContract": "Podpisz umowę",
+      "recordPrepayment": "Zapisz zaliczkę",
+      "recordPostpayment": "Zapisz płatność końcową",
+      "markInstalled": "Oznacz montaż",
+      "startWarranty": "Rozpocznij gwarancję",
+      "markBadLead": "Nieudany lead",
+      "completeTask": "Zakończ zadanie",
+      "cancelTask": "Anuluj zadanie",
+      "createTask": "Utwórz zadanie"
+    },
+    "callResult": {
+      "reached": "Połączono",
+      "no_answer": "Brak odpowiedzi",
+      "cannot_talk": "Nie może rozmawiać",
+      "bad_lead": "Nieudany lead"
+    },
+    "taskType": {
+      "callback": "Oddzwonienie",
+      "showroom_no_show_followup": "Po no-show showroomu",
+      "showroom_visit": "Wizyta w showroomie",
+      "contract_followup": "Umowa",
+      "prepayment_followup": "Zaliczka",
+      "manual": "Zadanie ręczne"
+    },
+    "showroomStatus": {
+      "scheduled": "Zaplanowana",
+      "visited": "Odbyła się",
+      "no_show": "Nie przyszedł",
+      "canceled": "Anulowana",
+      "rescheduled": "Przełożona"
+    },
+    "contractStatus": {
+      "planned": "Zaplanowana",
+      "signed": "Podpisana",
+      "canceled": "Anulowana"
+    },
+    "paymentType": {
+      "prepayment": "Zaliczka",
+      "postpayment": "Płatność końcowa"
+    },
+    "currency": {
+      "PLN": "PLN",
+      "EUR": "EUR",
+      "USD": "USD",
+      "GBP": "GBP",
+      "UAH": "UAH"
+    },
+    "sourceChannel": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "website": "Strona",
+      "other": "Inne"
+    }
+  },
+  "customerCard": {
+    "title": "Karta klienta",
+    "contacts": "Kontakt i źródło",
+    "primaryAction": "Następna akcja",
+    "callHistory": "Historia kontaktów",
+    "tasks": "Zadania",
+    "showroom": "Wizyty w showroomie",
+    "contractPayments": "Umowa i płatności",
+    "production": "Produkcja",
+    "activity": "Historia działań",
+    "files": "Pliki",
+    "nextAction": "Następna akcja",
+    "nextDue": "Termin",
+    "materials": "Materiały",
+    "quotedPrice": "Cena",
+    "plannedAt": "Zaplanowano",
+    "signedAt": "Podpisano",
+    "paidAt": "Opłacono",
+    "technicalDetails": "Dane techniczne importu",
+    "cityRegion": "Miasto / region",
+    "productInterest": "Zamówienie",
+    "sourceChannel": "Kanał źródła",
+    "sourceNote": "Notatka źródła",
+    "unassigned": "Nieprzypisany",
+    "noOpenTasks": "Brak otwartych zadań",
+    "noCalls": "Brak prób kontaktu",
+    "noVisits": "Brak wizyt",
+    "noContracts": "Brak umów",
+    "noPayments": "Brak płatności"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "period": "Okres",
+    "days": "{count} dni",
+    "leadsCreated": "Utworzone leady",
+    "notTaken": "Nie przejęte",
+    "reached": "Połączono",
+    "notReached": "Brak kontaktu",
+    "reachedToday": "Połączono dziś",
+    "notReachedToday": "Brak kontaktu dziś",
+    "reachedYesterday": "Połączono wczoraj",
+    "notReachedYesterday": "Brak kontaktu wczoraj",
+    "showroomScheduled": "Wizyty zaplanowane",
+    "showroomCompleted": "Wizyty odbyte",
+    "contractsPlanned": "Umowy zaplanowane",
+    "contractsSigned": "Umowy podpisane",
+    "prepayments": "Zaliczki",
+    "overdueTasks": "Zadania po terminie",
+    "noContactAttempt": "Bez próby kontaktu",
+    "noShow": "No-show",
+    "funnel": "Lejek konwersji",
+    "queues": {
+      "newLeads": "Nowe leady",
+      "callbacks": "Do oddzwonienia",
+      "noShow": "Nie przyszli do showroomu",
+      "scheduledShowroom": "Zaplanowane wizyty",
+      "contractPrepay": "Do umowy / zaliczki"
+    }
+  },
+  "leads": {
+    "title": "Klienci",
+    "new": "Nowy klient",
+    "filterCallback": "Oddzwonić",
+    "allStatuses": "Wszystkie statusy",
+    "nextTask": "Następne zadanie",
+    "assignedTo": "Menedżer",
+    "duplicateWarning": "Lead z tym telefonem lub emailem może już istnieć"
+  },
+  "roles": {
+    "super_admin": "Super admin",
+    "curator": "Kurator",
+    "office_admin": "Admin biura",
+    "office_member": "Menedżer"
+  },
+  "sourceSystem": {
+    "meta_lead_ads": "Facebook Forms",
+    "google_ads": "Google Ads",
+    "site_form": "Formularz strony",
+    "manual": "Ręcznie"
+  },
+  "product": {
+    "kitchen": "Kuchnia",
+    "home_furniture": "Meble domowe",
+    "wardrobe": "Szafa",
+    "other": "Inne"
+  },
+  "lossReason": {
+    "spam": "Spam",
+    "not_target": "Niecelowy",
+    "price": "Cena nie pasuje"
+  }
+}

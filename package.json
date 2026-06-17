@@ -6,12 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "supabase db push",
+    "db:migrate": "supabase migration up",
+    "db:status": "supabase migration list"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "next": "16.1.6",
+    "next-intl": "^4.13.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zod": "^4.4.3"

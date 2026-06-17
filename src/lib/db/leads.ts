@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Lead } from "@/lib/types/database";
 
 export const LEAD_LIST_COLUMNS =
-  "id, name, phone, email, lead_status, office_id, callback_due_at, created_at, lead_status_changed_at, assigned_to, offices(code, name_uk)";
+  "id, name, phone, email, workflow_status, office_id, next_task_due_at, next_task_title, created_at, workflow_status_changed_at, assigned_to, source_channel, source_system, offices(code, name_uk), profiles:assigned_to(display_name)";
 
 export type LeadListFilters = {
   officeId?: string;
@@ -25,10 +25,14 @@ export async function listLeads(filters: LeadListFilters) {
     query = query.eq("office_id", filters.officeId);
   }
   if (filters.status) {
-    query = query.eq("lead_status", filters.status);
+    query = query.eq("workflow_status", filters.status);
   }
   if (filters.callbackOnly) {
-    query = query.not("callback_due_at", "is", null);
+    query = query.in("workflow_status", ["callback_required", "in_work"]).not(
+      "next_task_due_at",
+      "is",
+      null
+    );
   }
 
   return query;
@@ -38,7 +42,7 @@ export async function getLeadById(id: string) {
   const supabase = await createClient();
   return supabase
     .from("leads")
-    .select("*, offices(code, name_uk)")
+    .select("*, offices(code, name_uk), profiles:assigned_to(display_name)")
     .eq("id", id)
     .single();
 }

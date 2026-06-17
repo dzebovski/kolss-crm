@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { getLocale } from "next-intl/server";
+import { IntlProvider } from "@/components/intl-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,18 +14,20 @@ export const metadata: Metadata = {
   description: "CRM для лідів KOLSS",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="uk" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <IntlProvider>{children}</IntlProvider>
       </body>
     </html>
   );

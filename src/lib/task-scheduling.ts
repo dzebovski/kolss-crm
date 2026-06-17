@@ -1,7 +1,10 @@
 import { timezoneForOffice } from "@/lib/office-timezone";
 
-const CALLBACK_HOUR_END = 18;
-const NEXT_DAY_CALLBACK_HOUR = 10;
+const BUSINESS_START = 9;
+const MORNING_END = 13;
+const AFTERNOON_START = 14;
+const BUSINESS_END = 18;
+const NEXT_DAY_HOUR = 9;
 
 function getOfficeLocalParts(date: Date, officeCode: string) {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -23,6 +26,7 @@ function getOfficeLocalParts(date: Date, officeCode: string) {
     month: Number(get("month")),
     day: Number(get("day")),
     hour: Number(get("hour")),
+    minute: Number(get("minute")),
     weekday: get("weekday"),
   };
 }
@@ -64,12 +68,7 @@ function utcFromOfficeLocal(
   return guess;
 }
 
-function addCalendarDays(
-  year: number,
-  month: number,
-  day: number,
-  days: number
-) {
+function addCalendarDays(year: number, month: number, day: number, days: number) {
   const d = new Date(Date.UTC(year, month - 1, day + days));
   return {
     year: d.getUTCFullYear(),
@@ -78,11 +77,12 @@ function addCalendarDays(
   };
 }
 
-function nextBusinessDayAtTen(
+function nextBusinessDayAt(
   officeCode: string,
   year: number,
   month: number,
-  day: number
+  day: number,
+  hour: number
 ) {
   let cursor = addCalendarDays(year, month, day, 1);
   for (let i = 0; i < 7; i++) {
@@ -100,7 +100,7 @@ function nextBusinessDayAtTen(
         cursor.year,
         cursor.month,
         cursor.day,
-        NEXT_DAY_CALLBACK_HOUR
+        hour
       );
     }
     cursor = addCalendarDays(cursor.year, cursor.month, cursor.day, 1);
@@ -110,30 +110,61 @@ function nextBusinessDayAtTen(
     cursor.year,
     cursor.month,
     cursor.day,
-    NEXT_DAY_CALLBACK_HOUR
+    hour
   );
 }
 
-/** Due date for "no answer" callback: +2h, or next business day 10:00 if after 18:00 office time. */
-export function computeNoAnswerDueAt(
-  now: Date,
-  officeCode: string
-): Date {
+/**
+ * Callback scheduling per product spec:
+ * 09:00–13:00 → same day after 14:00
+ * 13:01–18:00 → next business day 09:00
+ * outside hours → next business day 09:00
+ */
+export function computeCallbackDueAt(now: Date, officeCode: string): Date {
   const local = getOfficeLocalParts(now, officeCode);
-  const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-  const localAfterTwo = getOfficeLocalParts(twoHoursLater, officeCode);
 
-  if (
-    local.hour >= CALLBACK_HOUR_END ||
-    localAfterTwo.hour >= CALLBACK_HOUR_END
-  ) {
-    return nextBusinessDayAtTen(
+  if (local.hour >= BUSINESS_START && local.hour <= MORNING_END) {
+    return utcFromOfficeLocal(
       officeCode,
       local.year,
       local.month,
-      local.day
+      local.day,
+      AFTERNOON_START
     );
   }
 
-  return twoHoursLater;
+  if (local.hour > MORNING_END && local.hour <= BUSINESS_END) {
+    return nextBusinessDayAt(
+      officeCode,
+      local.year,
+      local.month,
+      local.day,
+      NEXT_DAY_HOUR
+    );
+  }
+
+  return nextBusinessDayAt(
+    officeCode,
+    local.year,
+    local.month,
+    local.day,
+    NEXT_DAY_HOUR
+  );
+}
+
+/** @deprecated use computeCallbackDueAt */
+export function computeNoAnswerDueAt(now: Date, officeCode: string): Date {
+  return computeCallbackDueAt(now, officeCode);
+}
+
+/** Next business day at 09:00 office time (for showroom no-show follow-up). */
+export function computeNextDayCallbackAt(now: Date, officeCode: string): Date {
+  const local = getOfficeLocalParts(now, officeCode);
+  return nextBusinessDayAt(
+    officeCode,
+    local.year,
+    local.month,
+    local.day,
+    NEXT_DAY_HOUR
+  );
 }

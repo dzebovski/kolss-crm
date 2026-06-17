@@ -73,6 +73,8 @@ export async function POST(request: NextRequest) {
         source_system: "site_form",
         external_lead_id: externalId,
         lead_status: "new",
+        workflow_status: "new",
+        workflow_status_changed_at: new Date().toISOString(),
         name: data.name || null,
         phone: data.phone || null,
         email: data.email || null,

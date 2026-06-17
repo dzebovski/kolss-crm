@@ -1,0 +1,208 @@
+{
+  "nav": {
+    "dashboard": "Дашборд",
+    "leads": "Клієнти",
+    "newLead": "Новий лід",
+    "users": "Користувачі",
+    "design": "Дизайн",
+    "signOut": "Вийти"
+  },
+  "common": {
+    "back": "Назад",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "submit": "Надіслати",
+    "loading": "Завантаження…",
+    "error": "Помилка",
+    "noData": "Немає даних",
+    "office": "Офіс",
+    "manager": "Менеджер",
+    "phone": "Телефон",
+    "email": "Email",
+    "name": "Ім'я",
+    "comment": "Коментар",
+    "commentRequired": "Коментар обов'язковий",
+    "date": "Дата",
+    "amount": "Сума",
+    "currency": "Валюта",
+    "status": "Статус",
+    "source": "Джерело",
+    "actions": "Дії",
+    "overdue": "Прострочено",
+    "today": "Сьогодні",
+    "open": "Відкрита",
+    "done": "Виконана",
+    "canceled": "Скасована"
+  },
+  "workflow": {
+    "status": {
+      "new": "Нова заявка",
+      "in_work": "В роботі",
+      "callback_required": "Потрібен передзвін",
+      "contacted": "Контакт встановлено",
+      "showroom_scheduled": "Візит заплановано",
+      "showroom_visited": "Візит відбувся",
+      "showroom_no_show": "Не прийшов у шоурум",
+      "contract_planned": "Договір заплановано",
+      "contract_signed": "Договір підписано",
+      "prepayment_received": "Передоплата отримана",
+      "in_production": "У виробництві",
+      "postpayment_received": "Постоплата отримана",
+      "installed": "Встановлено",
+      "warranty": "Гарантія",
+      "bad_lead": "Невдалий лід"
+    },
+    "actions": {
+      "takeInWork": "Взяти в роботу",
+      "recordCall": "Записати дзвінок",
+      "scheduleShowroom": "Запланувати візит у шоурум",
+      "rescheduleShowroom": "Перенести візит",
+      "markNoShow": "Не прийшов",
+      "markVisited": "Візит відбувся",
+      "planContract": "Запланувати договір",
+      "signContract": "Підписати договір",
+      "recordPrepayment": "Записати передоплату",
+      "recordPostpayment": "Записати постоплату",
+      "markInstalled": "Відмітити встановлення",
+      "startWarranty": "Почати гарантію",
+      "markBadLead": "Невдалий лід",
+      "completeTask": "Виконати задачу",
+      "cancelTask": "Скасувати задачу",
+      "createTask": "Створити задачу"
+    },
+    "callResult": {
+      "reached": "Додзвонився",
+      "no_answer": "Не відповів",
+      "cannot_talk": "Не може говорити",
+      "bad_lead": "Невдалий лід"
+    },
+    "taskType": {
+      "callback": "Передзвін",
+      "showroom_no_show_followup": "Після no-show шоуруму",
+      "showroom_visit": "Візит у шоурум",
+      "contract_followup": "Договір",
+      "prepayment_followup": "Передоплата",
+      "manual": "Ручна задача"
+    },
+    "showroomStatus": {
+      "scheduled": "Заплановано",
+      "visited": "Відбувся",
+      "no_show": "Не прийшов",
+      "canceled": "Скасовано",
+      "rescheduled": "Перенесено"
+    },
+    "contractStatus": {
+      "planned": "Заплановано",
+      "signed": "Підписано",
+      "canceled": "Скасовано"
+    },
+    "paymentType": {
+      "prepayment": "Передоплата",
+      "postpayment": "Постоплата"
+    },
+    "currency": {
+      "PLN": "PLN",
+      "EUR": "EUR",
+      "USD": "USD",
+      "GBP": "GBP",
+      "UAH": "UAH"
+    },
+    "sourceChannel": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "website": "Сайт",
+      "other": "Інше"
+    }
+  },
+  "customerCard": {
+    "title": "Картка клієнта",
+    "contacts": "Контакти та джерело",
+    "primaryAction": "Наступна дія",
+    "callHistory": "Історія дзвінків",
+    "tasks": "Задачі",
+    "showroom": "Візити у шоурум",
+    "contractPayments": "Договір та оплати",
+    "production": "Виробництво",
+    "activity": "Історія дій",
+    "files": "Файли",
+    "nextAction": "Наступна дія",
+    "nextDue": "Термін",
+    "materials": "Матеріали",
+    "quotedPrice": "Ціна",
+    "plannedAt": "Заплановано",
+    "signedAt": "Підписано",
+    "paidAt": "Оплачено",
+    "technicalDetails": "Технічні дані імпорту",
+    "cityRegion": "Місто / регіон",
+    "productInterest": "Що замовляє",
+    "sourceChannel": "Канал джерела",
+    "sourceNote": "Примітка до джерела",
+    "unassigned": "Не призначено",
+    "noOpenTasks": "Немає відкритих задач",
+    "noCalls": "Ще не було дзвінків",
+    "noVisits": "Ще не було візитів",
+    "noContracts": "Ще немає договорів",
+    "noPayments": "Ще немає оплат"
+  },
+  "dashboard": {
+    "title": "Дашборд",
+    "period": "Період",
+    "days": "{count} днів",
+    "leadsCreated": "Створено лідів",
+    "notTaken": "Не взято в роботу",
+    "reached": "Додзвонились",
+    "notReached": "Не додзвонились",
+    "reachedToday": "Додзвон сьогодні",
+    "notReachedToday": "Не додзвон сьогодні",
+    "reachedYesterday": "Додзвон вчора",
+    "notReachedYesterday": "Не додзвон вчора",
+    "showroomScheduled": "Візити заплановано",
+    "showroomCompleted": "Візити відбулись",
+    "contractsPlanned": "Договори заплановано",
+    "contractsSigned": "Договори підписано",
+    "prepayments": "Передоплати",
+    "overdueTasks": "Прострочені задачі",
+    "noContactAttempt": "Без спроби дзвінка",
+    "noShow": "No-show",
+    "funnel": "Воронка конверсії",
+    "queues": {
+      "newLeads": "Нові ліди",
+      "callbacks": "Передзвонити",
+      "noShow": "Не прийшли в шоурум",
+      "scheduledShowroom": "Заплановані візити",
+      "contractPrepay": "До договору / передоплати"
+    }
+  },
+  "leads": {
+    "title": "Клієнти",
+    "new": "Новий клієнт",
+    "filterCallback": "Передзвонити",
+    "allStatuses": "Усі статуси",
+    "nextTask": "Наступна задача",
+    "assignedTo": "Менеджер",
+    "duplicateWarning": "Лід з таким телефоном або email може вже існувати"
+  },
+  "roles": {
+    "super_admin": "Супер-адмін",
+    "curator": "Куратор",
+    "office_admin": "Адмін офісу",
+    "office_member": "Менеджер"
+  },
+  "sourceSystem": {
+    "meta_lead_ads": "Facebook Forms",
+    "google_ads": "Google Ads",
+    "site_form": "Форма сайту",
+    "manual": "Вручну"
+  },
+  "product": {
+    "kitchen": "Кухня",
+    "home_furniture": "Меблі для дому",
+    "wardrobe": "Шафа",
+    "other": "Інше"
+  },
+  "lossReason": {
+    "spam": "Спам",
+    "not_target": "Нецільовий",
+    "price": "Не підійшла ціна"
+  }
+}

@@ -129,6 +129,8 @@ async function batchUpsertMappedLeads(
           source_system: mapped.source_system,
           external_lead_id: mapped.external_lead_id,
           lead_status: "new",
+          workflow_status: "new",
+          workflow_status_changed_at: new Date().toISOString(),
           ...marketingFieldsFromMapped(mapped),
         }))
       )

@@ -4,6 +4,7 @@ import { revalidateLeads, revalidateProjects } from "@/lib/cache-tags";
 import { getAuthenticatedActionContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { findDuplicateLeads } from "@/lib/db/workflow";
 import { enqueueLeadNotifications } from "@/services/notifications/enqueue";
 import { processPendingNotifications } from "@/services/notifications/process";
 import { normalizePhoneForOffice } from "@/lib/phone";
@@ -226,6 +227,15 @@ export async function createManualLead(formData: FormData) {
   const phone =
     normalizePhoneForOffice(rawPhone, officeCode) ?? rawPhone.trim();
 
+  const email = str(formData, "email") || null;
+  const { data: duplicates } = await findDuplicateLeads(
+    officeId,
+    phone || null,
+    email
+  );
+  const duplicateWarning =
+    duplicates && duplicates.length > 0 ? duplicates.map((d) => d.id) : null;
+
   const externalId = `manual:${crypto.randomUUID()}`;
   const recordedAt = parseRecordedAt(formData);
 
@@ -236,11 +246,13 @@ export async function createManualLead(formData: FormData) {
       source_system: "manual",
       external_lead_id: externalId,
       lead_status: "new",
+      workflow_status: "new",
       created_at: recordedAt,
       lead_status_changed_at: recordedAt,
+      workflow_status_changed_at: recordedAt,
       name: str(formData, "name") ?? "",
       phone: phone || null,
-      email: str(formData, "email") || null,
+      email: email,
       city_region: str(formData, "city_region") || null,
       product_interest: str(formData, "product_interest") || null,
       order_comment: str(formData, "order_comment") || null,
@@ -290,5 +302,5 @@ export async function createManualLead(formData: FormData) {
   await processPendingNotifications(admin);
 
   revalidateLeads();
-  return lead.id;
+  return { leadId: lead.id, duplicateWarning };
 }

@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { requireAuth } from "@/lib/auth";
 import { LeadsFilter } from "@/components/leads-filter";
 import { listLeads } from "@/lib/db/leads";
-import { hasActiveCallbackReminder } from "@/lib/callback-reminder";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
-import { getLeadStatuses } from "@/lib/queries/reference-data";
 import { resolveUserOfficeContext } from "@/lib/queries/user-offices";
+import { WORKFLOW_STATUSES } from "@/lib/workflow";
 import type { Lead } from "@/lib/types/database";
+import { DSBadge } from "@/components/ui/design-system";
 
 const PAGE_SIZE = 50;
 
@@ -29,6 +30,10 @@ export default async function LeadsPage({
     page: pageParam,
   } = await searchParams;
 
+  const t = await getTranslations("leads");
+  const tw = await getTranslations("workflow");
+  const tc = await getTranslations("common");
+
   const ctx = await requireAuth();
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
@@ -46,21 +51,17 @@ export default async function LeadsPage({
     ? officeFilter ?? ""
     : (userOffices[0]?.id ?? "");
 
-  const [statuses, leadsResult] = await Promise.all([
-    getLeadStatuses(),
-    listLeads({
-      officeId: canFilterLeads && officeFilter ? officeFilter : undefined,
-      status: statusFilter,
-      callbackOnly: callbackFilter === "1",
-      offset,
-      limit: PAGE_SIZE,
-    }),
-  ]);
+  const leadsResult = await listLeads({
+    officeId: canFilterLeads && officeFilter ? officeFilter : undefined,
+    status: statusFilter,
+    callbackOnly: callbackFilter === "1",
+    offset,
+    limit: PAGE_SIZE,
+  });
 
   const { data: leads, error, count } = leadsResult;
   const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
 
-  const statusMap = new Map(statuses.map((s) => [s.code, s.label_uk]));
   const officeCodeById = new Map(offices.map((o) => [o.id, o.code]));
   const officeNameById = new Map(offices.map((o) => [o.id, o.name_uk]));
 
@@ -83,18 +84,6 @@ export default async function LeadsPage({
     const joined = lead.offices;
     const office = Array.isArray(joined) ? joined[0] : joined;
     return office?.code ?? officeCodeById.get(lead.office_id) ?? "kyiv";
-  }
-
-  function statusTimeLabel(
-    lead: Lead & {
-      offices?: { code?: string } | { code?: string }[] | null;
-    }
-  ) {
-    const isNew = lead.lead_status === "new";
-    const ts = isNew
-      ? lead.created_at
-      : lead.lead_status_changed_at ?? lead.created_at;
-    return formatLeadDateTime(ts, officeCodeForLead(lead));
   }
 
   function filterHref(overrides?: { status?: string; callback?: string }) {
@@ -121,7 +110,7 @@ export default async function LeadsPage({
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Ліди</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <div className="flex flex-wrap items-center gap-3">
           <Suspense>
             <LeadsFilter
@@ -135,7 +124,7 @@ export default async function LeadsPage({
             href="/app/leads/new"
             className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-hover)]"
           >
-            + Новий лід
+            + {t("new")}
           </Link>
         </div>
       </div>
@@ -145,44 +134,45 @@ export default async function LeadsPage({
           href={filterHref()}
           className={`rounded-lg px-3 py-1 ${!statusFilter ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
         >
-          Усі
+          {t("allStatuses")}
         </Link>
-        {statuses.map((s) => (
+        {WORKFLOW_STATUSES.map((code) => (
           <Link
-            key={s.code}
-            href={filterHref({ status: s.code })}
-            className={`rounded-lg px-3 py-1 ${statusFilter === s.code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
+            key={code}
+            href={filterHref({ status: code })}
+            className={`rounded-lg px-3 py-1 ${statusFilter === code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
           >
-            {s.label_uk}
+            {tw(`status.${code}`)}
           </Link>
         ))}
         <Link
           href={filterHref({ callback: "1" })}
           className={`rounded-lg px-3 py-1 ${callbackFilter === "1" ? "bg-amber-100 text-amber-900 font-medium" : "border border-[var(--border)]"}`}
         >
-          Передзвонити
+          {t("filterCallback")}
         </Link>
       </div>
 
       {error && (
-        <p className="text-red-600">Помилка завантаження: {error.message}</p>
+        <p className="text-red-600">{tc("error")}: {error.message}</p>
       )}
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--background)]">
             <tr>
-              {canFilterLeads && (
-                <th className="px-4 py-3 font-medium">Офіс</th>
-              )}
-              <th className="px-4 py-3 font-medium">Статус</th>
-              <th className="px-4 py-3 font-medium">Імʼя</th>
-              <th className="px-4 py-3 font-medium">Телефон</th>
+              {canFilterLeads && <th className="px-4 py-3 font-medium">{tc("office")}</th>}
+              <th className="px-4 py-3 font-medium">{tc("status")}</th>
+              <th className="px-4 py-3 font-medium">{tc("name")}</th>
+              <th className="px-4 py-3 font-medium">{tc("phone")}</th>
+              <th className="px-4 py-3 font-medium">{t("assignedTo")}</th>
+              <th className="px-4 py-3 font-medium">{t("nextTask")}</th>
             </tr>
           </thead>
           <tbody>
             {(leads as (Lead & {
               offices: { name_uk: string; code?: string } | { name_uk: string; code?: string }[];
+              profiles?: { display_name: string | null };
             })[] | null)?.map((lead) => {
               const code = officeCodeForLead(lead);
               return (
@@ -198,21 +188,7 @@ export default async function LeadsPage({
                     </td>
                   )}
                   <td className="px-4 py-3">
-                    <div className="font-medium">
-                      {statusMap.get(lead.lead_status) ?? lead.lead_status ?? "—"}
-                    </div>
-                    {lead.lead_status === "in_progress" &&
-                      hasActiveCallbackReminder(lead.callback_due_at) && (
-                        <div className="mt-1">
-                          <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                            Передзвонити до{" "}
-                            {formatLeadDateTime(lead.callback_due_at!, code)}
-                          </span>
-                        </div>
-                      )}
-                    <div className="mt-0.5 text-xs text-[var(--muted)]">
-                      {statusTimeLabel(lead)}
-                    </div>
+                    <DSBadge>{tw(`status.${lead.workflow_status}`)}</DSBadge>
                   </td>
                   <td className="px-4 py-3">
                     <Link
@@ -225,38 +201,47 @@ export default async function LeadsPage({
                   <td className="px-4 py-3 whitespace-nowrap">
                     {formatPhoneDisplay(lead.phone, code)}
                   </td>
+                  <td className="px-4 py-3">
+                    {lead.profiles?.display_name ?? "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {lead.next_task_title ? (
+                      <div>
+                        <div>{lead.next_task_title}</div>
+                        {lead.next_task_due_at && (
+                          <div className="text-xs text-[var(--muted)]">
+                            {formatLeadDateTime(lead.next_task_due_at, code)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         {!leads?.length && !error && (
-          <p className="px-4 py-8 text-center text-[var(--muted)]">
-            Лідів ще немає.
-          </p>
+          <p className="px-4 py-8 text-center text-[var(--muted)]">{tc("noData")}</p>
         )}
       </div>
 
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm">
           <span className="text-[var(--muted)]">
-            Сторінка {page} з {totalPages}
+            {page} / {totalPages}
           </span>
           <div className="flex gap-2">
             {page > 1 && (
-              <Link
-                href={pageHref(page - 1)}
-                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
-              >
-                Попередня
+              <Link href={pageHref(page - 1)} className="rounded-lg border border-[var(--border)] px-3 py-1">
+                ←
               </Link>
             )}
             {page < totalPages && (
-              <Link
-                href={pageHref(page + 1)}
-                className="rounded-lg border border-[var(--border)] px-3 py-1 hover:bg-[var(--background)]"
-              >
-                Наступна
+              <Link href={pageHref(page + 1)} className="rounded-lg border border-[var(--border)] px-3 py-1">
+                →
               </Link>
             )}
           </div>

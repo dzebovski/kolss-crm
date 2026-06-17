@@ -139,6 +139,7 @@ export type Database = {
       lead_events: {
         Row: {
           actor_id: string | null
+          comment: string | null
           created_at: string
           event_type: string
           id: string
@@ -148,6 +149,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          comment?: string | null
           created_at?: string
           event_type: string
           id?: string
@@ -157,6 +159,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          comment?: string | null
           created_at?: string
           event_type?: string
           id?: string
@@ -360,23 +363,33 @@ export type Database = {
           form_id: string | null
           form_name: string | null
           id: string
+          installed_at: string | null
           is_organic: string | null
           lead_status: string
           lead_status_changed_at: string | null
           loss_reason: string | null
           name: string | null
+          next_task_due_at: string | null
+          next_task_title: string | null
           office_id: string
           order_comment: string | null
           our_quote: number | null
           phone: string | null
           platform: string | null
+          postpayment_received_at: string | null
           product_interest: string | null
+          production_started_at: string | null
           project_stage_source: string | null
           raw_payload: Json
+          source_channel: string | null
           source_created_at: string | null
+          source_note: string | null
           source_system: string
           stage_comment: string | null
           updated_at: string
+          warranty_started_at: string | null
+          workflow_status: string
+          workflow_status_changed_at: string | null
         }
         Insert: {
           ad_id?: string | null
@@ -394,23 +407,33 @@ export type Database = {
           form_id?: string | null
           form_name?: string | null
           id?: string
+          installed_at?: string | null
           is_organic?: string | null
           lead_status?: string
           lead_status_changed_at?: string | null
           loss_reason?: string | null
           name?: string | null
+          next_task_due_at?: string | null
+          next_task_title?: string | null
           office_id: string
           order_comment?: string | null
           our_quote?: number | null
           phone?: string | null
           platform?: string | null
+          postpayment_received_at?: string | null
           product_interest?: string | null
+          production_started_at?: string | null
           project_stage_source?: string | null
           raw_payload?: Json
+          source_channel?: string | null
           source_created_at?: string | null
+          source_note?: string | null
           source_system?: string
           stage_comment?: string | null
           updated_at?: string
+          warranty_started_at?: string | null
+          workflow_status?: string
+          workflow_status_changed_at?: string | null
         }
         Update: {
           ad_id?: string | null
@@ -428,23 +451,33 @@ export type Database = {
           form_id?: string | null
           form_name?: string | null
           id?: string
+          installed_at?: string | null
           is_organic?: string | null
           lead_status?: string
           lead_status_changed_at?: string | null
           loss_reason?: string | null
           name?: string | null
+          next_task_due_at?: string | null
+          next_task_title?: string | null
           office_id?: string
           order_comment?: string | null
           our_quote?: number | null
           phone?: string | null
           platform?: string | null
+          postpayment_received_at?: string | null
           product_interest?: string | null
+          production_started_at?: string | null
           project_stage_source?: string | null
           raw_payload?: Json
+          source_channel?: string | null
           source_created_at?: string | null
+          source_note?: string | null
           source_system?: string
           stage_comment?: string | null
           updated_at?: string
+          warranty_started_at?: string | null
+          workflow_status?: string
+          workflow_status_changed_at?: string | null
         }
         Relationships: [
           {
@@ -769,11 +802,171 @@ export type Database = {
           },
         ]
       }
+      lead_contact_attempts: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          lead_id: string
+          manager_id: string
+          result: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          manager_id: string
+          result: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          manager_id?: string
+          result?: string
+        }
+        Relationships: []
+      }
+      lead_showroom_visits: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string
+          id: string
+          lead_id: string
+          materials: string | null
+          quoted_price_amount: number | null
+          quoted_price_currency: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          lead_id: string
+          materials?: string | null
+          quoted_price_amount?: number | null
+          quoted_price_currency?: string | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          lead_id?: string
+          materials?: string | null
+          quoted_price_amount?: number | null
+          quoted_price_currency?: string | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_contracts: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string
+          id: string
+          lead_id: string
+          planned_at: string | null
+          signed_at: string | null
+          status: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          lead_id: string
+          planned_at?: string | null
+          signed_at?: string | null
+          status?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          lead_id?: string
+          planned_at?: string | null
+          signed_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      lead_payments: {
+        Row: {
+          amount: number
+          comment: string | null
+          created_at: string
+          created_by: string
+          currency: Database["public"]["Enums"]["lead_payment_currency"]
+          id: string
+          lead_id: string
+          paid_at: string
+          payment_type: Database["public"]["Enums"]["lead_payment_type"]
+        }
+        Insert: {
+          amount: number
+          comment?: string | null
+          created_at?: string
+          created_by: string
+          currency: Database["public"]["Enums"]["lead_payment_currency"]
+          id?: string
+          lead_id: string
+          paid_at: string
+          payment_type: Database["public"]["Enums"]["lead_payment_type"]
+        }
+        Update: {
+          amount?: number
+          comment?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: Database["public"]["Enums"]["lead_payment_currency"]
+          id?: string
+          lead_id?: string
+          paid_at?: string
+          payment_type?: Database["public"]["Enums"]["lead_payment_type"]
+        }
+        Relationships: []
+      }
+      lead_workflow_statuses: {
+        Row: {
+          category: string
+          code: string
+          is_terminal: boolean
+          sort_order: number
+        }
+        Insert: {
+          category?: string
+          code: string
+          is_terminal?: boolean
+          sort_order: number
+        }
+        Update: {
+          category?: string
+          code?: string
+          is_terminal?: boolean
+          sort_order?: number
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assignee_id: string | null
           completed_at: string | null
           created_at: string
+          created_by: string | null
           due_at: string
           entity_id: string
           entity_type: Database["public"]["Enums"]["task_entity_type"]
@@ -781,12 +974,14 @@ export type Database = {
           priority: Database["public"]["Enums"]["task_priority"]
           source: Database["public"]["Enums"]["task_source"]
           status: Database["public"]["Enums"]["task_status"]
+          task_type: Database["public"]["Enums"]["task_type"] | null
           title: string
         }
         Insert: {
           assignee_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           due_at: string
           entity_id: string
           entity_type: Database["public"]["Enums"]["task_entity_type"]
@@ -794,12 +989,14 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           title: string
         }
         Update: {
           assignee_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           due_at?: string
           entity_id?: string
           entity_type?: Database["public"]["Enums"]["task_entity_type"]
@@ -807,6 +1004,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"] | null
           title?: string
         }
         Relationships: [
@@ -858,6 +1056,11 @@ export type Database = {
         Args: { target_office_id: string }
         Returns: boolean
       }
+      get_workflow_dashboard: {
+        Args: { p_manager_id?: string; p_office_id?: string; p_period_days?: number }
+        Returns: Json
+      }
+      take_lead_in_work: { Args: { p_lead_id: string }; Returns: undefined }
       convert_lead_to_project: { Args: { p_lead_id: string }; Returns: string }
       get_dashboard_overview: {
         Args: { p_office_id?: string; p_period_days?: number }
@@ -883,7 +1086,24 @@ export type Database = {
       project_document_type: "contract" | "act" | "other"
       task_entity_type: "lead" | "project"
       task_priority: "normal" | "high"
-      task_source: "manual" | "auto_no_answer" | "auto_inactivity"
+      lead_payment_currency: "PLN" | "EUR" | "USD" | "GBP" | "UAH"
+      lead_payment_type: "prepayment" | "postpayment"
+      task_source:
+        | "manual"
+        | "auto_no_answer"
+        | "auto_inactivity"
+        | "auto_callback"
+        | "auto_showroom_no_show"
+        | "auto_showroom_visit"
+        | "auto_contract"
+        | "auto_prepayment"
+      task_type:
+        | "callback"
+        | "showroom_no_show_followup"
+        | "showroom_visit"
+        | "contract_followup"
+        | "prepayment_followup"
+        | "manual"
       task_status: "open" | "done" | "canceled"
       user_role: "super_admin" | "curator" | "office_admin" | "office_member"
     }
