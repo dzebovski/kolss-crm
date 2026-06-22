@@ -1,7 +1,11 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { resolveVerifiedUser } from "@/lib/supabase/session-user";
+import { perfAsync } from "@/lib/perf";
 import { canManageUsers } from "@/lib/roles";
+import { RETURN_TO_HEADER, safeAppReturnTo } from "@/lib/navigation";
 import type { Profile, UserRole } from "@/lib/types/database";
 
 export type SessionContext = {
@@ -10,30 +14,40 @@ export type SessionContext = {
 };
 
 export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  return perfAsync("auth.getSessionContext", async () => {
+    const supabase = await createClient();
+    const user = await resolveVerifiedUser(supabase);
+    if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, role, display_name, is_active, deactivated_at, created_at, updated_at")
-    .eq("id", user.id)
-    .single();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, role, display_name, is_active, deactivated_at, created_at, updated_at")
+      .eq("id", user.id)
+      .single();
 
-  if (!profile) return null;
+    if (!profile) return null;
 
-  return {
-    user: { id: user.id, email: user.email },
-    profile: profile as Profile,
-  };
+    return {
+      user: { id: user.id, email: user.email },
+      profile: profile as Profile,
+    };
+  });
 });
 
 export async function requireAuth(): Promise<SessionContext> {
   const ctx = await getSessionContext();
-  if (!ctx) redirect("/login");
-  if (!ctx.profile.is_active) redirect("/login?error=deactivated");
+  if (!ctx) {
+    const headerStore = await headers();
+    const returnTo = safeAppReturnTo(headerStore.get(RETURN_TO_HEADER));
+    redirect(`/login?next=${encodeURIComponent(returnTo)}`);
+  }
+  if (!ctx.profile.is_active) {
+    const headerStore = await headers();
+    const returnTo = safeAppReturnTo(headerStore.get(RETURN_TO_HEADER));
+    redirect(
+      `/login?error=deactivated&next=${encodeURIComponent(returnTo)}`
+    );
+  }
   return ctx;
 }
 

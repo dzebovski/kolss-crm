@@ -74,8 +74,8 @@ export function CreateLeadForm({
       <div>
         <label className="mb-1 block text-sm text-[var(--muted)]">Офіс</label>
         <select
-          name="office_id"
-          required
+          name={canPickOffice ? "office_id" : undefined}
+          required={canPickOffice}
           value={selectedOfficeId}
           disabled={!canPickOffice}
           onChange={(e) => onOfficeChange(e.target.value)}
@@ -87,6 +87,9 @@ export function CreateLeadForm({
             </option>
           ))}
         </select>
+        {!canPickOffice && (
+          <input type="hidden" name="office_id" value={selectedOfficeId} />
+        )}
       </div>
 
       <div>
@@ -136,8 +139,8 @@ export function CreateLeadForm({
           <label className="mb-1 block text-sm text-[var(--muted)]">
             {labels.product}
           </label>
-          <select name="product_interest" required className={fieldClass} defaultValue="">
-            <option value="" disabled>
+          <select name="product_interest" className={fieldClass} defaultValue="">
+            <option value="">
               {labels.selectPlaceholder}
             </option>
             {PRODUCT_INTEREST_OPTIONS.map((o) => (
@@ -168,11 +171,10 @@ export function CreateLeadForm({
           </label>
           <select
             name="project_stage_source"
-            required
             className={fieldClass}
             defaultValue=""
           >
-            <option value="" disabled>
+            <option value="">
               {labels.selectPlaceholder}
             </option>
             {PROJECT_STAGE_OPTIONS.map((o) => (

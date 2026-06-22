@@ -57,6 +57,8 @@ export type LossReason = {
   label_pl: string;
 };
 
+export type LeadQuality = "good" | "bad";
+
 export type Lead = {
   id: string;
   office_id: string;
@@ -76,10 +78,13 @@ export type Lead = {
   source_note: string | null;
   next_task_due_at: string | null;
   next_task_title: string | null;
+  last_comment: string | null;
+  last_comment_at: string | null;
   production_started_at: string | null;
   postpayment_received_at: string | null;
   installed_at: string | null;
   warranty_started_at: string | null;
+  lead_quality: LeadQuality | null;
   name: string | null;
   phone: string | null;
   email: string | null;
@@ -174,6 +179,7 @@ export type Task = {
   created_by: string | null;
   created_at: string;
   completed_at: string | null;
+  profiles?: { display_name: string | null };
 };
 
 export type TaskType =
@@ -206,6 +212,7 @@ export type LeadShowroomVisit = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  profiles?: { display_name: string | null };
 };
 
 export type LeadContract = {
@@ -217,6 +224,7 @@ export type LeadContract = {
   comment: string | null;
   created_by: string;
   created_at: string;
+  profiles?: { display_name: string | null };
 };
 
 export type LeadPayment = {
@@ -229,6 +237,7 @@ export type LeadPayment = {
   comment: string | null;
   created_by: string;
   created_at: string;
+  profiles?: { display_name: string | null };
 };
 
 export type WorkflowStatusRow = {
@@ -269,6 +278,11 @@ export type LeadAttachment = {
   mime_type: string;
   size_bytes: number;
   created_at: string;
+  profiles?: { display_name: string | null };
+};
+
+export type SignedLeadAttachment = LeadAttachment & {
+  url: string;
 };
 
 export type ImportSource = {

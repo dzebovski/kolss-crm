@@ -55,7 +55,7 @@ export function CustomerWorkflowPanel({
   const [scheduledAt, setScheduledAt] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
 
-  function run(action: () => Promise<void>) {
+  function run(action: () => Promise<unknown>) {
     setError(null);
     start(async () => {
       try {

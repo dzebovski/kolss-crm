@@ -365,12 +365,15 @@ export type Database = {
           id: string
           installed_at: string | null
           is_organic: string | null
+          lead_quality: string | null
           lead_status: string
           lead_status_changed_at: string | null
           loss_reason: string | null
           name: string | null
           next_task_due_at: string | null
           next_task_title: string | null
+          last_comment: string | null
+          last_comment_at: string | null
           office_id: string
           order_comment: string | null
           our_quote: number | null
@@ -409,12 +412,15 @@ export type Database = {
           id?: string
           installed_at?: string | null
           is_organic?: string | null
+          lead_quality?: string | null
           lead_status?: string
           lead_status_changed_at?: string | null
           loss_reason?: string | null
           name?: string | null
           next_task_due_at?: string | null
           next_task_title?: string | null
+          last_comment?: string | null
+          last_comment_at?: string | null
           office_id: string
           order_comment?: string | null
           our_quote?: number | null
@@ -453,12 +459,15 @@ export type Database = {
           id?: string
           installed_at?: string | null
           is_organic?: string | null
+          lead_quality?: string | null
           lead_status?: string
           lead_status_changed_at?: string | null
           loss_reason?: string | null
           name?: string | null
           next_task_due_at?: string | null
           next_task_title?: string | null
+          last_comment?: string | null
+          last_comment_at?: string | null
           office_id?: string
           order_comment?: string | null
           our_quote?: number | null
@@ -1057,7 +1066,13 @@ export type Database = {
         Returns: boolean
       }
       get_workflow_dashboard: {
-        Args: { p_manager_id?: string; p_office_id?: string; p_period_days?: number }
+        Args: {
+          p_from?: string
+          p_manager_id?: string
+          p_office_id?: string
+          p_period_days?: number
+          p_to?: string
+        }
         Returns: Json
       }
       take_lead_in_work: { Args: { p_lead_id: string }; Returns: undefined }

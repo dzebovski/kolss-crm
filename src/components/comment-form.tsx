@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 type Props = {
   title: string;
   placeholder?: string;
-  onSubmit: (body: string) => Promise<void>;
+  onSubmit: (body: string) => Promise<unknown>;
 };
 
 export function CommentForm({ title, placeholder = "Коментар…", onSubmit }: Props) {

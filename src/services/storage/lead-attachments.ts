@@ -8,6 +8,10 @@ import {
   validateLeadAttachment,
 } from "@/lib/attachments";
 import { formatSupabaseError } from "@/lib/errors";
+import type {
+  LeadAttachment,
+  SignedLeadAttachment,
+} from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
@@ -89,8 +93,8 @@ export async function uploadLeadAttachments(
 
 export async function getLeadAttachmentSignedUrls(
   _supabase: Client,
-  attachments: { storage_path: string; file_name: string }[]
-) {
+  attachments: LeadAttachment[]
+): Promise<SignedLeadAttachment[]> {
   const storage = createStorageAdminClient();
 
   const signed = await Promise.all(
@@ -99,9 +103,11 @@ export async function getLeadAttachmentSignedUrls(
         .from(LEAD_ATTACHMENTS_BUCKET)
         .createSignedUrl(att.storage_path, 3600);
       if (error || !data?.signedUrl) return null;
-      return { file_name: att.file_name, url: data.signedUrl };
+      return { ...att, url: data.signedUrl } satisfies SignedLeadAttachment;
     })
   );
 
-  return signed.filter((r): r is { file_name: string; url: string } => r !== null);
+  return signed.filter(
+    (row): row is SignedLeadAttachment => row !== null
+  );
 }

@@ -40,3 +40,8 @@ export function formatLeadDateTime(
 
   return `${get("hour")}:${get("minute")}, ${get("day")}.${get("month")}.${get("year")}`;
 }
+
+export function isPastDate(iso: string): boolean {
+  const timestamp = new Date(iso).getTime();
+  return !Number.isNaN(timestamp) && timestamp < Date.now();
+}

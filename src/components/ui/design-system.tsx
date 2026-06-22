@@ -179,6 +179,8 @@ type DSButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: "sm" | "md" | "icon";
   leadingIcon?: IconName;
   trailingIcon?: IconName;
+  loading?: boolean;
+  loadingLabel?: string;
 };
 
 export function DSButton({
@@ -186,8 +188,11 @@ export function DSButton({
   size = "md",
   leadingIcon,
   trailingIcon,
+  loading = false,
+  loadingLabel,
   className,
   children,
+  disabled,
   ...props
 }: DSButtonProps) {
   const variants = {
@@ -208,6 +213,8 @@ export function DSButton({
 
   return (
     <button
+      aria-busy={loading || undefined}
+      disabled={disabled || loading}
       className={cx(
         "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border font-medium outline-none transition-[background-color,border-color,color,box-shadow] duration-150 active:shadow-none focus-visible:ring-2 focus-visible:ring-[var(--ds-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ds-surface-0)] disabled:pointer-events-none disabled:opacity-45",
         variants[variant],
@@ -216,15 +223,90 @@ export function DSButton({
       )}
       {...props}
     >
-      {leadingIcon && <DSIcon name={leadingIcon} />}
-      {children}
-      {trailingIcon && <DSIcon name={trailingIcon} />}
+      {loading ? (
+        <span
+          aria-hidden="true"
+          className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent opacity-80"
+        />
+      ) : (
+        leadingIcon && <DSIcon name={leadingIcon} />
+      )}
+      {loading && loadingLabel ? loadingLabel : children}
+      {!loading && trailingIcon && <DSIcon name={trailingIcon} />}
     </button>
   );
 }
 
+export type DSBadgeTone =
+  | "neutral"
+  | "accent"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "purple";
+
+const dsToneStyles: Record<
+  DSBadgeTone,
+  { badge: string; chipInactive: string; chipActive: string }
+> = {
+  neutral: {
+    badge:
+      "border-[var(--ds-border)] bg-[var(--ds-surface-2)] text-[var(--ds-foreground-light)]",
+    chipInactive: "border border-[var(--border)]",
+    chipActive: "border-transparent bg-[var(--accent)] text-white",
+  },
+  accent: {
+    badge:
+      "border-[var(--ds-accent-border)] bg-[var(--ds-accent-soft)] text-[var(--ds-accent-strong)]",
+    chipInactive:
+      "border border-[var(--ds-accent-border)] bg-[var(--ds-accent-soft)] text-[var(--ds-accent-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-accent-strong)] text-white",
+  },
+  success: {
+    badge:
+      "border-[var(--ds-success-border)] bg-[var(--ds-success-soft)] text-[var(--ds-success-strong)]",
+    chipInactive:
+      "border border-[var(--ds-success-border)] bg-[var(--ds-success-soft)] text-[var(--ds-success-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-success-strong)] text-white",
+  },
+  warning: {
+    badge:
+      "border-[var(--ds-warning-border)] bg-[var(--ds-warning-soft)] text-[var(--ds-warning-strong)]",
+    chipInactive:
+      "border border-[var(--ds-warning-border)] bg-[var(--ds-warning-soft)] text-[var(--ds-warning-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-warning-strong)] text-white",
+  },
+  danger: {
+    badge:
+      "border-[var(--ds-danger-border-soft)] bg-[var(--ds-danger-soft)] text-[var(--ds-danger-strong)]",
+    chipInactive:
+      "border border-[var(--ds-danger-border-soft)] bg-[var(--ds-danger-soft)] text-[var(--ds-danger-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-danger-strong)] text-white",
+  },
+  info: {
+    badge:
+      "border-[var(--ds-info-border)] bg-[var(--ds-info-soft)] text-[var(--ds-info-strong)]",
+    chipInactive:
+      "border border-[var(--ds-info-border)] bg-[var(--ds-info-soft)] text-[var(--ds-info-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-info-strong)] text-white",
+  },
+  purple: {
+    badge:
+      "border-[var(--ds-purple-border)] bg-[var(--ds-purple-soft)] text-[var(--ds-purple-strong)]",
+    chipInactive:
+      "border border-[var(--ds-purple-border)] bg-[var(--ds-purple-soft)] text-[var(--ds-purple-strong)]",
+    chipActive: "border-transparent bg-[var(--ds-purple-strong)] text-white",
+  },
+};
+
+export function dsToneChipClasses(tone: DSBadgeTone, active: boolean): string {
+  const styles = dsToneStyles[tone];
+  return active ? styles.chipActive : styles.chipInactive;
+}
+
 type DSBadgeProps = HTMLAttributes<HTMLSpanElement> & {
-  tone?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
+  tone?: DSBadgeTone;
   dot?: boolean;
 };
 
@@ -235,25 +317,11 @@ export function DSBadge({
   children,
   ...props
 }: DSBadgeProps) {
-  const tones = {
-    neutral:
-      "border-[var(--ds-border)] bg-[var(--ds-surface-2)] text-[var(--ds-foreground-light)]",
-    accent:
-      "border-[var(--ds-accent-border)] bg-[var(--ds-accent-soft)] text-[var(--ds-accent-strong)]",
-    success:
-      "border-[var(--ds-success-border)] bg-[var(--ds-success-soft)] text-[var(--ds-success-strong)]",
-    warning:
-      "border-[var(--ds-warning-border)] bg-[var(--ds-warning-soft)] text-[var(--ds-warning-strong)]",
-    danger:
-      "border-[var(--ds-danger-border-soft)] bg-[var(--ds-danger-soft)] text-[var(--ds-danger-strong)]",
-    info: "border-[var(--ds-info-border)] bg-[var(--ds-info-soft)] text-[var(--ds-info-strong)]",
-  };
-
   return (
     <span
       className={cx(
         "inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium leading-none",
-        tones[tone],
+        dsToneStyles[tone].badge,
         className
       )}
       {...props}

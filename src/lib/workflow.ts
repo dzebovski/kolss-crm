@@ -1,4 +1,6 @@
 /** Workflow status codes for lead-centric CRM */
+import type { DSBadgeTone } from "@/components/ui/design-system";
+
 export const WORKFLOW_STATUSES = [
   "new",
   "in_work",
@@ -18,6 +20,99 @@ export const WORKFLOW_STATUSES = [
 ] as const;
 
 export type WorkflowStatus = (typeof WORKFLOW_STATUSES)[number];
+
+/** Grouped status filters for the leads list page */
+export const LEAD_LIST_FILTER_GROUPS = [
+  {
+    key: "new",
+    statuses: ["new"],
+  },
+  {
+    key: "in_work",
+    statuses: ["in_work", "callback_required", "contacted", "contract_planned"],
+  },
+  {
+    key: "showroom",
+    statuses: ["showroom_scheduled", "showroom_visited", "showroom_no_show"],
+  },
+  {
+    key: "deal",
+    statuses: [
+      "contract_signed",
+      "prepayment_received",
+      "in_production",
+      "postpayment_received",
+      "installed",
+      "warranty",
+    ],
+  },
+  {
+    key: "bad_lead",
+    statuses: ["bad_lead"],
+  },
+] as const;
+
+export type LeadListFilterGroupKey = (typeof LEAD_LIST_FILTER_GROUPS)[number]["key"];
+
+export function resolveLeadListStatusFilter(status?: string): string[] | undefined {
+  if (!status) return undefined;
+
+  const group = LEAD_LIST_FILTER_GROUPS.find((g) => g.key === status);
+  if (group) return [...group.statuses];
+
+  if ((WORKFLOW_STATUSES as readonly string[]).includes(status)) {
+    const containingGroup = LEAD_LIST_FILTER_GROUPS.find((g) =>
+      (g.statuses as readonly string[]).includes(status)
+    );
+    if (containingGroup) return [...containingGroup.statuses];
+  }
+
+  return undefined;
+}
+
+export function isLeadListFilterGroupActive(
+  groupKey: LeadListFilterGroupKey,
+  statusFilter?: string
+): boolean {
+  if (!statusFilter) return false;
+  if (statusFilter === groupKey) return true;
+  const group = LEAD_LIST_FILTER_GROUPS.find((g) => g.key === groupKey);
+  return group ? (group.statuses as readonly string[]).includes(statusFilter) : false;
+}
+
+export function workflowGroupTone(key: LeadListFilterGroupKey): DSBadgeTone {
+  switch (key) {
+    case "new":
+      return "info";
+    case "in_work":
+      return "success";
+    case "showroom":
+      return "purple";
+    case "deal":
+      return "accent";
+    case "bad_lead":
+      return "danger";
+  }
+}
+
+export function workflowStatusTone(status: string): DSBadgeTone {
+  const group = LEAD_LIST_FILTER_GROUPS.find((g) =>
+    (g.statuses as readonly string[]).includes(status)
+  );
+  return group ? workflowGroupTone(group.key) : "neutral";
+}
+
+export const LEAD_QUALITIES = ["good", "bad"] as const;
+export type LeadQuality = (typeof LEAD_QUALITIES)[number];
+
+export const LEAD_ACTIVITY_TYPES = [
+  "note",
+  "reached",
+  "no_answer",
+  "cannot_talk",
+  "showroom",
+] as const;
+export type LeadActivityType = (typeof LEAD_ACTIVITY_TYPES)[number];
 
 export const CONTACT_RESULTS = [
   "reached",

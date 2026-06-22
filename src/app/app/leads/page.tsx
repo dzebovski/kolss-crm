@@ -3,13 +3,22 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { requireAuth } from "@/lib/auth";
 import { LeadsFilter } from "@/components/leads-filter";
+import { getCachedLeadsList } from "@/lib/db/cached-leads";
 import { listLeads } from "@/lib/db/leads";
+import { createClient } from "@/lib/supabase/server";
 import { formatLeadDateTime } from "@/lib/datetime";
 import { formatPhoneDisplay } from "@/lib/phone";
-import { resolveUserOfficeContext } from "@/lib/queries/user-offices";
-import { WORKFLOW_STATUSES } from "@/lib/workflow";
+import { resolveEffectiveContext } from "@/lib/queries/effective-context";
+import { getOfficeFlagEmoji } from "@/lib/office-label";
+import {
+  isLeadListFilterGroupActive,
+  type LeadListFilterGroupKey,
+  workflowGroupTone,
+  workflowStatusTone,
+} from "@/lib/workflow";
 import type { Lead } from "@/lib/types/database";
-import { DSBadge } from "@/components/ui/design-system";
+import { DSBadge, dsToneChipClasses } from "@/components/ui/design-system";
+import { DSSkeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 50;
 
@@ -38,26 +47,34 @@ export default async function LeadsPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
-  const officeCtx = await resolveUserOfficeContext(ctx);
+  const effective = await resolveEffectiveContext(ctx);
   const {
     canFilter: canFilterLeads,
     filterOffices,
     canUseOfficeFilter,
     userOffices,
     offices,
-  } = officeCtx;
+  } = effective.officeCtx;
+  const { forcedOfficeId } = effective;
 
-  const selectedOfficeId = canUseOfficeFilter
-    ? officeFilter ?? ""
-    : (userOffices[0]?.id ?? "");
+  const selectedOfficeId = forcedOfficeId
+    ? forcedOfficeId
+    : canUseOfficeFilter
+      ? officeFilter ?? ""
+      : (userOffices[0]?.id ?? "");
 
-  const leadsResult = await listLeads({
-    officeId: canFilterLeads && officeFilter ? officeFilter : undefined,
+  const listFilters = {
+    officeId: forcedOfficeId ?? (canFilterLeads && officeFilter ? officeFilter : undefined),
     status: statusFilter,
     callbackOnly: callbackFilter === "1",
     offset,
     limit: PAGE_SIZE,
-  });
+  };
+
+  const supabase = await createClient();
+  const leadsResult = await getCachedLeadsList(ctx.user.id, listFilters, () =>
+    listLeads(listFilters, supabase)
+  );
 
   const { data: leads, error, count } = leadsResult;
   const totalPages = count ? Math.ceil(count / PAGE_SIZE) : 1;
@@ -89,12 +106,41 @@ export default async function LeadsPage({
   function filterHref(overrides?: { status?: string; callback?: string }) {
     const params = new URLSearchParams();
     if (officeFilter) params.set("office", officeFilter);
-    const status = overrides?.status ?? statusFilter;
-    const callback = overrides?.callback ?? callbackFilter;
-    if (status) params.set("status", status);
-    if (callback === "1") params.set("callback", "1");
+
+    if (overrides && "callback" in overrides) {
+      if (overrides.callback === "1") params.set("callback", "1");
+    } else if (overrides && "status" in overrides) {
+      if (overrides.status) params.set("status", overrides.status);
+    } else {
+      if (statusFilter) params.set("status", statusFilter);
+      if (callbackFilter === "1") params.set("callback", "1");
+    }
+
     const q = params.toString();
     return q ? `/app/leads?${q}` : "/app/leads";
+  }
+
+  function groupLabel(key: LeadListFilterGroupKey) {
+    if (key === "showroom") return t("filterShowroom");
+    if (key === "deal") return t("filterDeal");
+    return tw(`status.${key}`);
+  }
+
+  const filterOrder: LeadListFilterGroupKey[] = [
+    "new",
+    "in_work",
+    "showroom",
+    "deal",
+    "bad_lead",
+  ];
+
+  const filtersBeforeCallback = filterOrder.slice(0, 2);
+  const filtersAfterCallback = filterOrder.slice(2);
+
+  function filterChipClass(key: LeadListFilterGroupKey) {
+    const active =
+      isLeadListFilterGroupActive(key, statusFilter) && callbackFilter !== "1";
+    return `rounded-lg px-3 py-1 ${dsToneChipClasses(workflowGroupTone(key), active)}`;
   }
 
   function pageHref(nextPage: number) {
@@ -112,12 +158,12 @@ export default async function LeadsPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <Suspense>
+          <Suspense fallback={<DSSkeleton className="h-10 w-56 rounded-lg" />}>
             <LeadsFilter
               offices={filterOffices}
               currentOfficeId={selectedOfficeId}
-              disabled={!canUseOfficeFilter}
-              showAllOption={canUseOfficeFilter}
+              disabled={!canUseOfficeFilter || Boolean(forcedOfficeId)}
+              showAllOption={canUseOfficeFilter && !forcedOfficeId}
             />
           </Suspense>
           <Link
@@ -131,18 +177,14 @@ export default async function LeadsPage({
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link
-          href={filterHref()}
-          className={`rounded-lg px-3 py-1 ${!statusFilter ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
+          href={filterHref({ status: "" })}
+          className={`rounded-lg px-3 py-1 ${dsToneChipClasses("neutral", !statusFilter && callbackFilter !== "1")}`}
         >
           {t("allStatuses")}
         </Link>
-        {WORKFLOW_STATUSES.map((code) => (
-          <Link
-            key={code}
-            href={filterHref({ status: code })}
-            className={`rounded-lg px-3 py-1 ${statusFilter === code ? "bg-[var(--accent)] text-white" : "border border-[var(--border)]"}`}
-          >
-            {tw(`status.${code}`)}
+        {filtersBeforeCallback.map((key) => (
+          <Link key={key} href={filterHref({ status: key })} className={filterChipClass(key)}>
+            {groupLabel(key)}
           </Link>
         ))}
         <Link
@@ -151,6 +193,11 @@ export default async function LeadsPage({
         >
           {t("filterCallback")}
         </Link>
+        {filtersAfterCallback.map((key) => (
+          <Link key={key} href={filterHref({ status: key })} className={filterChipClass(key)}>
+            {groupLabel(key)}
+          </Link>
+        ))}
       </div>
 
       {error && (
@@ -166,7 +213,7 @@ export default async function LeadsPage({
               <th className="px-4 py-3 font-medium">{tc("name")}</th>
               <th className="px-4 py-3 font-medium">{tc("phone")}</th>
               <th className="px-4 py-3 font-medium">{t("assignedTo")}</th>
-              <th className="px-4 py-3 font-medium">{t("nextTask")}</th>
+              <th className="px-4 py-3 font-medium">{t("lastComment")}</th>
             </tr>
           </thead>
           <tbody>
@@ -175,6 +222,7 @@ export default async function LeadsPage({
               profiles?: { display_name: string | null };
             })[] | null)?.map((lead) => {
               const code = officeCodeForLead(lead);
+              const officeFlag = getOfficeFlagEmoji(code);
               return (
                 <tr
                   key={lead.id}
@@ -182,13 +230,16 @@ export default async function LeadsPage({
                 >
                   {canFilterLeads && (
                     <td className="px-4 py-3">
-                      <span className="inline-flex rounded-md bg-[var(--background)] px-2 py-0.5 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-[var(--background)] px-2 py-0.5 text-xs font-medium">
+                        {officeFlag && <span aria-hidden="true">{officeFlag}</span>}
                         {officeLabel(lead)}
                       </span>
                     </td>
                   )}
                   <td className="px-4 py-3">
-                    <DSBadge>{tw(`status.${lead.workflow_status}`)}</DSBadge>
+                    <DSBadge tone={workflowStatusTone(lead.workflow_status)}>
+                      {tw(`status.${lead.workflow_status}`)}
+                    </DSBadge>
                   </td>
                   <td className="px-4 py-3">
                     <Link
@@ -204,13 +255,13 @@ export default async function LeadsPage({
                   <td className="px-4 py-3">
                     {lead.profiles?.display_name ?? "—"}
                   </td>
-                  <td className="px-4 py-3">
-                    {lead.next_task_title ? (
+                  <td className="px-4 py-3 max-w-xs">
+                    {lead.last_comment ? (
                       <div>
-                        <div>{lead.next_task_title}</div>
-                        {lead.next_task_due_at && (
+                        <div className="line-clamp-2">{lead.last_comment}</div>
+                        {lead.last_comment_at && (
                           <div className="text-xs text-[var(--muted)]">
-                            {formatLeadDateTime(lead.next_task_due_at, code)}
+                            {formatLeadDateTime(lead.last_comment_at, code)}
                           </div>
                         )}
                       </div>

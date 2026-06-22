@@ -1,6 +1,6 @@
 import { CustomerCard } from "@/components/customer/customer-card";
 import { notFound } from "next/navigation";
-import { getLeadById } from "@/lib/db/leads";
+import { getLeadPageData } from "@/lib/db/lead-detail";
 
 export default async function LeadDetailPage({
   params,
@@ -8,8 +8,8 @@ export default async function LeadDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { data: lead, error } = await getLeadById(id);
-  if (error || !lead) notFound();
+  const data = await getLeadPageData(id);
+  if (!data) notFound();
 
-  return <CustomerCard leadId={id} />;
+  return <CustomerCard data={data} />;
 }

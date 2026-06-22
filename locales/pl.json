@@ -5,7 +5,19 @@
     "newLead": "Nowy lead",
     "users": "Użytkownicy",
     "design": "Design",
+    "navigation": "Główna nawigacja",
+    "account": "Konto",
+    "close": "Zamknij",
     "signOut": "Wyloguj"
+  },
+  "navigation": {
+    "loading": "Ładowanie strony…"
+  },
+  "search": {
+    "placeholder": "Szukaj po nazwie, telefonie, emailu lub ID…",
+    "empty": "Nie znaleziono klientów",
+    "hint": "Dostępni klienci",
+    "loading": "Wyszukiwanie…"
   },
   "common": {
     "back": "Wstecz",
@@ -33,6 +45,27 @@
     "open": "Otwarte",
     "done": "Wykonane",
     "canceled": "Anulowane"
+  },
+  "feedback": {
+    "loading": "Ładowanie…",
+    "saving": "Zapisywanie…",
+    "takingInWork": "Przejmowanie leada…",
+    "creatingTask": "Tworzenie zadania…",
+    "savingData": "Zapisywanie danych…",
+    "updatingStatus": "Aktualizowanie statusu…",
+    "uploadingFiles": "Przesyłanie plików…",
+    "addingNote": "Dodawanie notatki…",
+    "completingTask": "Kończenie zadania…",
+    "waitForCurrentAction": "Poczekaj na zakończenie bieżącej akcji",
+    "operationFailed": "Nie udało się wykonać akcji",
+    "actionCompleted": "Dane zostały zaktualizowane",
+    "leadTakenInWork": "Lead został przejęty",
+    "taskCreated": "Zadanie utworzone",
+    "taskCompleted": "Zadanie wykonane",
+    "taskCanceled": "Zadanie anulowane",
+    "noteAdded": "Notatka dodana",
+    "dataSaved": "Dane zapisane",
+    "filesUploaded": "Pliki przesłane"
   },
   "workflow": {
     "status": {
@@ -135,19 +168,150 @@
     "technicalDetails": "Dane techniczne importu",
     "cityRegion": "Miasto / region",
     "productInterest": "Zamówienie",
+    "orderComment": "Komentarz do zamówienia",
     "sourceChannel": "Kanał źródła",
     "sourceNote": "Notatka źródła",
+    "edit": "Edytuj",
     "unassigned": "Nieprzypisany",
     "noOpenTasks": "Brak otwartych zadań",
     "noCalls": "Brak prób kontaktu",
     "noVisits": "Brak wizyt",
     "noContracts": "Brak umów",
-    "noPayments": "Brak płatności"
+    "noPayments": "Brak płatności",
+    "header": {
+      "nextTask": "Następne zadanie",
+      "noNextTask": "Brak zaplanowanych zadań"
+    },
+    "activityComposer": {
+      "takeInWorkHint": "Przypisz lead do siebie i rozpocznij pracę z klientem.",
+      "recordLabel": "Zapis",
+      "recordPlaceholder": "Co się stało lub co ustalono z klientem",
+      "optionalDate": "Data (opcjonalnie)",
+      "optionalDateHint": "Jeśli podasz datę, utworzy się zadanie z tym zapisem",
+      "showroomDateHint": "Dla wizyty w showroomie data jest wymagana",
+      "showroomDateRequired": "Podaj datę wizyty w showroomie",
+      "activityType": "Typ zapisu",
+      "save": "Zapisz",
+      "closeLead": "Zamknij lead",
+      "closeLeadTitle": "Zamknij jako zły lead",
+      "closeReason": "Powód",
+      "closeCommentPlaceholder": "Krótko wyjaśnij, dlaczego lead jest zamykany",
+      "confirmClose": "Potwierdź zamknięcie",
+      "terminal": "Aktywny proces dla tego leada został zakończony.",
+      "unavailable": "Dla bieżącego statusu brakuje aktywnego rekordu procesu.",
+      "types": {
+        "note": "Notatka",
+        "reached": "Dodzwoniono",
+        "no_answer": "Brak odpowiedzi",
+        "cannot_talk": "Oddzwonić",
+        "showroom": "Wizyta w showroomie"
+      },
+      "lossReasons": {
+        "spam": "Spam",
+        "notTarget": "Niecelowy",
+        "price": "Cena nie pasuje"
+      }
+    },
+    "showroomActions": {
+      "title": "Showroom",
+      "materials": "Materiały"
+    },
+    "commerceActions": {
+      "title": "Umowa i płatności"
+    },
+    "quality": {
+      "good": "Dobry lead",
+      "bad": "Zły lead",
+      "cleared": "Usunięto oznaczenie",
+      "markGood": "Dobry",
+      "markBad": "Zły"
+    },
+    "closeLead": {
+      "action": "Zamknij lead",
+      "title": "Zamknij lead",
+      "description": "Lead zostanie oznaczony jako zły i zniknie z aktywnej listy.",
+      "reason": "Powód",
+      "commentPlaceholder": "Krótko wyjaśnij, dlaczego lead jest zamykany",
+      "confirm": "Potwierdź zamknięcie",
+      "lossReasons": {
+        "spam": "Spam",
+        "notTarget": "Niecelowy",
+        "price": "Cena nie pasuje"
+      }
+    },
+    "tasksPanel": {
+      "title": "Otwarte zadania",
+      "canceledComment": "Anulowano z karty klienta"
+    },
+    "timeline": {
+      "title": "Historia interakcji",
+      "empty": "Brak zdarzeń dla tego filtra",
+      "saving": "Zapisywanie…",
+      "note": "Notatka",
+      "fileAdded": "Dodano plik",
+      "filters": {
+        "all": "Wszystko",
+        "records": "Zapisy",
+        "statuses": "Statusy",
+        "tasks": "Zadania"
+      },
+      "categories": {
+        "records": "Zapis",
+        "statuses": "Status",
+        "tasks": "Zadanie"
+      },
+      "events": {
+        "created": "Lead utworzony",
+        "lead_assigned": "Przypisano menedżera",
+        "customer_data_updated": "Zaktualizowano dane klienta",
+        "callback_cleared": "Oddzwonienie zamknięte",
+        "no_answer": "Klient nie odpowiedział",
+        "converted": "Lead skonwertowany",
+        "status_changed": "Status zmieniony",
+        "note_added": "Dodano notatkę",
+        "lead_quality_changed": "Zmieniono jakość leada"
+      }
+    },
+    "filesPanel": {
+      "title": "Pliki",
+      "add": "Dodaj",
+      "uploading": "Przesyłanie…",
+      "empty": "Brak plików",
+      "hint": "PDF, JPG, PNG, DOCX lub XLSX — do 5 MB każdy"
+    },
+    "commerce": {
+      "title": "Umowa i płatności",
+      "addContract": "+ Umowa",
+      "addContractTitle": "Zaplanuj umowę",
+      "contract": "Umowa",
+      "noContract": "Jeszcze brak",
+      "totals": "Zapłacono",
+      "production": "Produkcja",
+      "installed": "Montaż",
+      "warranty": "Gwarancja"
+    }
   },
   "dashboard": {
     "title": "Panel",
     "period": "Okres",
     "days": "{count} dni",
+    "filters": {
+      "allOffices": "Wszystkie biura",
+      "officeAria": "Filtruj według biura",
+      "fromAria": "Data początku okresu",
+      "toAria": "Data końca okresu",
+      "presetAria": "Szybki wybór okresu",
+      "presets": {
+        "today": "Dziś",
+        "yesterday": "Wczoraj",
+        "week": "Ostatni tydzień",
+        "month": "Ostatni miesiąc"
+      },
+      "offices": {
+        "kyiv": "Kijów",
+        "warsaw": "Warszawa"
+      }
+    },
     "leadsCreated": "Utworzone leady",
     "notTaken": "Nie przejęte",
     "reached": "Połączono",
@@ -170,15 +334,24 @@
       "callbacks": "Do oddzwonienia",
       "noShow": "Nie przyszli do showroomu",
       "scheduledShowroom": "Zaplanowane wizyty",
-      "contractPrepay": "Do umowy / zaliczki"
+      "contractPrepay": "Do umowy / zaliczki",
+      "dateGroups": {
+        "overdue": "Zaległe",
+        "today": "Dziś",
+        "tomorrow": "Jutro",
+        "scheduled": "Zaplanowane"
+      }
     }
   },
   "leads": {
     "title": "Klienci",
     "new": "Nowy klient",
     "filterCallback": "Oddzwonić",
+    "filterShowroom": "Wizyty w showroomie",
+    "filterDeal": "Umowa i dalej",
     "allStatuses": "Wszystkie statusy",
     "nextTask": "Następne zadanie",
+    "lastComment": "Ostatni komentarz",
     "assignedTo": "Menedżer",
     "duplicateWarning": "Lead z tym telefonem lub emailem może już istnieć"
   },
@@ -204,5 +377,12 @@
     "spam": "Spam",
     "not_target": "Niecelowy",
     "price": "Cena nie pasuje"
+  },
+  "viewAs": {
+    "label": "Podgląd jako",
+    "super_admin": "Super Admin",
+    "kyiv": "Pracownik biura w Kijowie",
+    "warsaw": "Pracownik biura w Warszawie",
+    "preview": "Podgląd"
   }
 }

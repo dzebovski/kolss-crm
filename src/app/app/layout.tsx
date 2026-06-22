@@ -8,10 +8,5 @@ export default async function AppLayout({
 }) {
   await requireAuth();
 
-  return (
-    <>
-      <AppHeader />
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-    </>
-  );
+  return <AppHeader>{children}</AppHeader>;
 }

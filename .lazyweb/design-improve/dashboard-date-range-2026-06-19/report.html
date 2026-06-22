@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard Date Range — Design Improvement</title>
+    <style>
+      :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; color: #252523; background: #f7f7f5; }
+      body { margin: 0; padding: 48px 24px; line-height: 1.6; }
+      main { max-width: 900px; margin: 0 auto; padding: 40px; border: 1px solid #deded9; border-radius: 16px; background: white; box-shadow: 0 16px 40px rgba(24,24,23,.08); }
+      h1, h2, h3 { line-height: 1.2; }
+      h2 { margin-top: 36px; }
+      .tldr { padding: 18px 20px; border: 1px solid #bfdbfe; border-radius: 10px; background: #eff6ff; }
+      img { display: block; max-width: 100%; margin: 16px 0; border: 1px solid #e4e4df; border-radius: 10px; box-shadow: 0 8px 24px rgba(24,24,23,.08); }
+      pre { overflow-x: auto; padding: 18px; border-radius: 10px; background: #f4f4f1; }
+      li + li { margin-top: 6px; }
+      a { color: #24553f; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Design Improvement: Dashboard Date Range</h1>
+      <section class="tldr">
+        <strong>Recommendation:</strong> use a neutral segmented control. Tabs imply navigation, while a primary button gives the selected range excessive visual priority.
+      </section>
+
+      <h2>Current state</h2>
+      <img src="references/current.png" alt="Current dashboard date range controls" />
+      <p>The selected preset currently uses the same strong treatment as a primary CTA.</p>
+
+      <h2>Recommended improvement</h2>
+      <h3>Neutral segmented control</h3>
+      <p>Group the presets on one subtle surface. The selected option gets a raised white surface, thin edge, and small shadow.</p>
+      <pre>┌─────────────────────────────────────────────┐
+│ Today │ Yesterday │ Last week │ Last month │
+└─────────────────────────────────────────────┘
+                            └─ selected surface</pre>
+      <ul>
+        <li>Reads as one mutually exclusive filter.</li>
+        <li>Keeps the selected state clear without CTA styling.</li>
+        <li>Works correctly with native buttons and <code>aria-pressed</code>.</li>
+      </ul>
+
+      <h2>Alternative considered</h2>
+      <img src="references/tabs-reference.png" alt="Underline tabs reference supplied by the user" />
+      <p>Underline tabs are visually light, but tabs conventionally switch content sections rather than update a filter value.</p>
+
+      <h2>Supporting references</h2>
+      <ul>
+        <li><a href="https://mui.com/x/react-date-pickers/shortcuts/">MUI date picker shortcuts</a></li>
+        <li><a href="https://carbondesignsystem.com/components/date-picker/usage/">Carbon date picker guidance</a></li>
+      </ul>
+    </main>
+  </body>
+</html>

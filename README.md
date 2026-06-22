@@ -138,6 +138,7 @@ curl -X POST http://localhost:3000/api/webhooks/import-lead \
 ## Структура
 
 - `supabase/migrations/` — схема БД + seed
+- `docs/PERFORMANCE.md` — продуктивність, cold start Supabase, локальні виміри
 - `scripts/google-apps-script/` — Apps Script для push-імпорту
 - `src/services/import/` — мапінг Meta → leads, webhook upsert
 - `src/services/notifications/` — outbox Telegram/Slack

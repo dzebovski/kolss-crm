@@ -5,7 +5,19 @@
     "newLead": "New lead",
     "users": "Users",
     "design": "Design",
+    "navigation": "Main navigation",
+    "account": "Account",
+    "close": "Close",
     "signOut": "Sign out"
+  },
+  "navigation": {
+    "loading": "Loading page…"
+  },
+  "search": {
+    "placeholder": "Search by name, phone, email or ID…",
+    "empty": "No customers found",
+    "hint": "Accessible customers",
+    "loading": "Searching…"
   },
   "common": {
     "back": "Back",
@@ -33,6 +45,27 @@
     "open": "Open",
     "done": "Done",
     "canceled": "Canceled"
+  },
+  "feedback": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "takingInWork": "Taking into work…",
+    "creatingTask": "Creating task…",
+    "savingData": "Saving data…",
+    "updatingStatus": "Updating status…",
+    "uploadingFiles": "Uploading files…",
+    "addingNote": "Adding note…",
+    "completingTask": "Completing task…",
+    "waitForCurrentAction": "Wait for the current action to finish",
+    "operationFailed": "The action could not be completed",
+    "actionCompleted": "Data updated successfully",
+    "leadTakenInWork": "Lead taken into work",
+    "taskCreated": "Task created",
+    "taskCompleted": "Task completed",
+    "taskCanceled": "Task canceled",
+    "noteAdded": "Note added",
+    "dataSaved": "Data saved",
+    "filesUploaded": "Files uploaded"
   },
   "workflow": {
     "status": {
@@ -135,19 +168,150 @@
     "technicalDetails": "Technical import details",
     "cityRegion": "City / region",
     "productInterest": "Product interest",
+    "orderComment": "Order comment",
     "sourceChannel": "Source channel",
     "sourceNote": "Source note",
+    "edit": "Edit",
     "unassigned": "Unassigned",
     "noOpenTasks": "No open tasks",
     "noCalls": "No call attempts yet",
     "noVisits": "No showroom visits yet",
     "noContracts": "No contracts yet",
-    "noPayments": "No payments yet"
+    "noPayments": "No payments yet",
+    "header": {
+      "nextTask": "Next task",
+      "noNextTask": "No scheduled tasks"
+    },
+    "activityComposer": {
+      "takeInWorkHint": "Assign the lead to yourself and start working with the customer.",
+      "recordLabel": "Record",
+      "recordPlaceholder": "What happened or what was agreed with the customer",
+      "optionalDate": "Date (optional)",
+      "optionalDateHint": "If you set a date, a task will be created from this record",
+      "showroomDateHint": "A showroom visit date is required",
+      "showroomDateRequired": "Enter the showroom visit date",
+      "activityType": "Record type",
+      "save": "Save",
+      "closeLead": "Close lead",
+      "closeLeadTitle": "Close as bad lead",
+      "closeReason": "Reason",
+      "closeCommentPlaceholder": "Briefly explain why this lead is being closed",
+      "confirmClose": "Confirm close",
+      "terminal": "The active process for this lead is complete.",
+      "unavailable": "The current status is missing an active workflow record.",
+      "types": {
+        "note": "Note",
+        "reached": "Reached",
+        "no_answer": "No answer",
+        "cannot_talk": "Callback",
+        "showroom": "Showroom booking"
+      },
+      "lossReasons": {
+        "spam": "Spam",
+        "notTarget": "Not target",
+        "price": "Price mismatch"
+      }
+    },
+    "showroomActions": {
+      "title": "Showroom",
+      "materials": "Materials"
+    },
+    "commerceActions": {
+      "title": "Contract & payments"
+    },
+    "quality": {
+      "good": "Good lead",
+      "bad": "Bad lead",
+      "cleared": "Quality cleared",
+      "markGood": "Good",
+      "markBad": "Bad"
+    },
+    "closeLead": {
+      "action": "Close lead",
+      "title": "Close lead",
+      "description": "The lead will be marked as bad and removed from the active list.",
+      "reason": "Reason",
+      "commentPlaceholder": "Briefly explain why this lead is being closed",
+      "confirm": "Confirm close",
+      "lossReasons": {
+        "spam": "Spam",
+        "notTarget": "Not target",
+        "price": "Price mismatch"
+      }
+    },
+    "tasksPanel": {
+      "title": "Open tasks",
+      "canceledComment": "Canceled from the customer card"
+    },
+    "timeline": {
+      "title": "Interaction timeline",
+      "empty": "There are no events for this filter yet",
+      "saving": "Saving…",
+      "note": "Note",
+      "fileAdded": "File added",
+      "filters": {
+        "all": "All",
+        "records": "Records",
+        "statuses": "Statuses",
+        "tasks": "Tasks"
+      },
+      "categories": {
+        "records": "Record",
+        "statuses": "Status",
+        "tasks": "Task"
+      },
+      "events": {
+        "created": "Lead created",
+        "lead_assigned": "Manager assigned",
+        "customer_data_updated": "Customer details updated",
+        "callback_cleared": "Callback cleared",
+        "no_answer": "Customer did not answer",
+        "converted": "Lead converted",
+        "status_changed": "Status changed",
+        "note_added": "Note added",
+        "lead_quality_changed": "Lead quality changed"
+      }
+    },
+    "filesPanel": {
+      "title": "Files",
+      "add": "Add",
+      "uploading": "Uploading…",
+      "empty": "No files yet",
+      "hint": "PDF, JPG, PNG, DOCX or XLSX — up to 5 MB each"
+    },
+    "commerce": {
+      "title": "Contract & payments",
+      "addContract": "+ Contract",
+      "addContractTitle": "Plan contract",
+      "contract": "Contract",
+      "noContract": "Not created yet",
+      "totals": "Paid",
+      "production": "Production",
+      "installed": "Installation",
+      "warranty": "Warranty"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
     "period": "Period",
     "days": "{count} days",
+    "filters": {
+      "allOffices": "All offices",
+      "officeAria": "Filter by office",
+      "fromAria": "Period start date",
+      "toAria": "Period end date",
+      "presetAria": "Quick date ranges",
+      "presets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "week": "Last week",
+        "month": "Last month"
+      },
+      "offices": {
+        "kyiv": "Kyiv",
+        "warsaw": "Warsaw"
+      }
+    },
     "leadsCreated": "Leads created",
     "notTaken": "Not taken in work",
     "reached": "Reached",
@@ -170,15 +334,24 @@
       "callbacks": "Leads to call back",
       "noShow": "Did not come to showroom",
       "scheduledShowroom": "Scheduled for showroom",
-      "contractPrepay": "Bring to contract or prepayment"
+      "contractPrepay": "Bring to contract or prepayment",
+      "dateGroups": {
+        "overdue": "Overdue",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "scheduled": "Scheduled"
+      }
     }
   },
   "leads": {
     "title": "Customers",
     "new": "New customer",
     "filterCallback": "Callback",
+    "filterShowroom": "Showroom",
+    "filterDeal": "Deal",
     "allStatuses": "All statuses",
     "nextTask": "Next task",
+    "lastComment": "Last comment",
     "assignedTo": "Assigned to",
     "duplicateWarning": "A lead with this phone or email may already exist"
   },
@@ -204,5 +377,12 @@
     "spam": "Spam",
     "not_target": "Not target",
     "price": "Price mismatch"
+  },
+  "viewAs": {
+    "label": "View as",
+    "super_admin": "Super Admin",
+    "kyiv": "Kyiv office employee",
+    "warsaw": "Warsaw office employee",
+    "preview": "Preview"
   }
 }

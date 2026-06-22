@@ -1,19 +1,37 @@
 "use server";
 
-import { revalidateLeads } from "@/lib/cache-tags";
 import { getAuthenticatedActionContext } from "@/lib/auth";
+import { LEAD_CACHE_SCOPES } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
+import { finishLeadMutation } from "@/lib/lead-mutations";
 import {
   computeCallbackDueAt,
   computeNextDayCallbackAt,
 } from "@/lib/task-scheduling";
-import type { ContactResult, PaymentCurrency, TaskType } from "@/lib/workflow";
-import { CONTACT_RESULTS, PAYMENT_CURRENCIES } from "@/lib/workflow";
+import type { ContactResult, LeadActivityType, LeadQuality, PaymentCurrency, TaskType } from "@/lib/workflow";
+import { CONTACT_RESULTS, LEAD_ACTIVITY_TYPES, LEAD_QUALITIES, PAYMENT_CURRENCIES } from "@/lib/workflow";
 import type { Json } from "@/lib/types/supabase";
 import type { TaskSource } from "@/lib/types/database";
 import { parseOptionalDecimal } from "@/lib/validation";
+import { normalizePhoneForOffice } from "@/lib/phone";
+import { z } from "zod";
+import { perfAsync } from "@/lib/perf";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+const MUTATION_SNAPSHOT = { includeAttachments: false } as const;
+const FINISH_FULL = {
+  invalidate: LEAD_CACHE_SCOPES.full,
+  snapshot: MUTATION_SNAPSHOT,
+} as const;
+const FINISH_LIST = {
+  invalidate: LEAD_CACHE_SCOPES.listOnly,
+  snapshot: MUTATION_SNAPSHOT,
+} as const;
+const FINISH_NONE = {
+  invalidate: LEAD_CACHE_SCOPES.none,
+  snapshot: MUTATION_SNAPSHOT,
+} as const;
 
 async function getLeadWithOffice(supabase: Supabase, leadId: string) {
   const { data, error } = await supabase
@@ -119,7 +137,7 @@ export async function takeLeadInWork(leadId: string) {
   const { supabase } = await getAuthenticatedActionContext();
   const { error } = await supabase.rpc("take_lead_in_work", { p_lead_id: leadId });
   if (error) throw new Error(error.message);
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function recordContactAttempt(
@@ -184,7 +202,7 @@ export async function recordContactAttempt(
     { workflow_status: newStatus, result }
   );
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function scheduleShowroomVisit(
@@ -229,7 +247,7 @@ export async function scheduleShowroomVisit(
     { workflow_status: "showroom_scheduled", scheduled_at: when.toISOString() }
   );
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function rescheduleShowroomVisit(
@@ -287,7 +305,7 @@ export async function rescheduleShowroomVisit(
     { scheduled_at: when.toISOString() }
   );
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function markShowroomNoShow(visitId: string, comment: string) {
@@ -333,7 +351,7 @@ export async function markShowroomNoShow(visitId: string, comment: string) {
     { workflow_status: "showroom_no_show" }
   );
 
-  revalidateLeads(visit.lead_id);
+  return finishLeadMutation(visit.lead_id, FINISH_FULL);
 }
 
 export async function markShowroomVisited(
@@ -379,7 +397,7 @@ export async function markShowroomVisited(
     { materials, quoted_price_amount: price, currency }
   );
 
-  revalidateLeads(visit.lead_id);
+  return finishLeadMutation(visit.lead_id, FINISH_FULL);
 }
 
 export async function planContract(
@@ -425,7 +443,7 @@ export async function planContract(
     { planned_at: when.toISOString() }
   );
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function signContract(contractId: string, signedAt: string, comment: string) {
@@ -458,7 +476,7 @@ export async function signContract(contractId: string, signedAt: string, comment
     { signed_at: when.toISOString() }
   );
 
-  revalidateLeads(contract.lead_id);
+  return finishLeadMutation(contract.lead_id, FINISH_FULL);
 }
 
 export async function recordPayment(
@@ -518,7 +536,7 @@ export async function recordPayment(
     { payment_type: paymentType, amount: value, currency }
   );
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function markInstalled(leadId: string, comment: string) {
@@ -528,7 +546,7 @@ export async function markInstalled(leadId: string, comment: string) {
 
   await updateWorkflowStatus(supabase, leadId, "installed", { installed_at: now });
   await logActivity(supabase, leadId, user.id, "installed", body, null, { installed_at: now });
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function startWarranty(leadId: string, comment: string) {
@@ -540,7 +558,7 @@ export async function startWarranty(leadId: string, comment: string) {
   await logActivity(supabase, leadId, user.id, "warranty_started", body, null, {
     warranty_started_at: now,
   });
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_FULL);
 }
 
 export async function completeTask(taskId: string) {
@@ -562,8 +580,9 @@ export async function completeTask(taskId: string) {
     await logActivity(supabase, task.entity_id, user.id, "task_completed", null, null, {
       task_id: taskId,
     });
-    revalidateLeads(task.entity_id);
+    return finishLeadMutation(task.entity_id, FINISH_LIST);
   }
+  return null;
 }
 
 export async function cancelTask(taskId: string, comment: string) {
@@ -586,8 +605,9 @@ export async function cancelTask(taskId: string, comment: string) {
     await logActivity(supabase, task.entity_id, user.id, "task_canceled", body, null, {
       task_id: taskId,
     });
-    revalidateLeads(task.entity_id);
+    return finishLeadMutation(task.entity_id, FINISH_LIST);
   }
+  return null;
 }
 
 export async function createManualTask(
@@ -620,7 +640,7 @@ export async function createManualTask(
     due_at: when.toISOString(),
   });
 
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_LIST);
 }
 
 export async function updateCustomerFields(
@@ -650,7 +670,7 @@ export async function updateCustomerFields(
     fields as Json,
     null
   );
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_LIST);
 }
 
 export async function updateSourceFields(
@@ -671,5 +691,321 @@ export async function updateSourceFields(
   await logActivity(supabase, leadId, user.id, "customer_data_updated", sourceNote ?? null, null, {
     source_channel: sourceChannel,
   });
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, FINISH_NONE);
+}
+
+const leadDetailsSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  phone: z.string().trim().max(80),
+  email: z.union([z.literal(""), z.string().trim().email().max(200)]),
+  cityRegion: z.string().trim().max(200),
+  productInterest: z.enum(["", "kitchen", "home_furniture", "wardrobe", "other"]),
+  orderComment: z.string().trim().max(2000),
+  sourceChannel: z.enum(["", "facebook", "instagram", "website", "other"]),
+  sourceNote: z.string().trim().max(1000),
+});
+
+export type LeadDetailsInput = z.infer<typeof leadDetailsSchema>;
+
+export async function updateLeadDetails(
+  leadId: string,
+  input: LeadDetailsInput
+) {
+  const parsed = leadDetailsSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid customer data");
+  }
+
+  const { supabase, user } = await getAuthenticatedActionContext();
+  const { data: before } = await supabase
+    .from("leads")
+    .select("*, offices(code)")
+    .eq("id", leadId)
+    .single();
+  if (!before) throw new Error("Lead not found");
+
+  const joinedOffice = before.offices as
+    | { code: string }
+    | { code: string }[]
+    | null;
+  const office = Array.isArray(joinedOffice) ? joinedOffice[0] : joinedOffice;
+  const phone = normalizePhoneForOffice(parsed.data.phone, office?.code ?? "kyiv");
+  const fields = {
+    name: parsed.data.name,
+    phone,
+    email: parsed.data.email || null,
+    city_region: parsed.data.cityRegion || null,
+    product_interest: parsed.data.productInterest || null,
+    order_comment: parsed.data.orderComment || null,
+    source_channel: parsed.data.sourceChannel || null,
+    source_note: parsed.data.sourceNote || null,
+  };
+
+  const { error } = await supabase.from("leads").update(fields).eq("id", leadId);
+  if (error) throw error;
+
+  await logActivity(
+    supabase,
+    leadId,
+    user.id,
+    "customer_data_updated",
+    null,
+    {
+      name: before.name,
+      phone: before.phone,
+      email: before.email,
+      city_region: before.city_region,
+      product_interest: before.product_interest,
+      order_comment: before.order_comment,
+      source_channel: before.source_channel,
+      source_note: before.source_note,
+    },
+    fields
+  );
+  return finishLeadMutation(leadId, FINISH_LIST);
+}
+
+function taskTitleFromComment(comment: string, leadName: string | null) {
+  const trimmed = comment.trim();
+  if (trimmed.length <= 60) return trimmed;
+  return `${trimmed.slice(0, 57)}...`;
+}
+
+async function insertLeadComment(
+  supabase: Supabase,
+  leadId: string,
+  authorId: string,
+  leadStatus: string,
+  body: string
+) {
+  const { error } = await supabase.from("lead_comments").insert({
+    lead_id: leadId,
+    author_id: authorId,
+    lead_status: leadStatus,
+    body,
+  });
+  if (error) throw error;
+}
+
+async function applyContactAttempt(
+  supabase: Supabase,
+  leadId: string,
+  userId: string,
+  lead: Awaited<ReturnType<typeof getLeadWithOffice>>["lead"],
+  officeCode: string,
+  result: ContactResult,
+  body: string
+) {
+  const { error: insertErr } = await supabase.from("lead_contact_attempts").insert({
+    lead_id: leadId,
+    manager_id: userId,
+    result,
+    comment: body,
+  });
+  if (insertErr) throw insertErr;
+
+  const oldStatus = lead.workflow_status;
+  let newStatus = oldStatus;
+
+  if (result === "reached") {
+    newStatus = "contacted";
+    await updateWorkflowStatus(supabase, leadId, newStatus, {
+      callback_due_at: null,
+    });
+  } else if (result === "bad_lead") {
+    newStatus = "bad_lead";
+    await updateWorkflowStatus(supabase, leadId, newStatus, {
+      lead_status: "failed",
+      lead_status_changed_at: new Date().toISOString(),
+      callback_due_at: null,
+    });
+  } else {
+    newStatus = "callback_required";
+    const dueAt = computeCallbackDueAt(new Date(), officeCode);
+    await updateWorkflowStatus(supabase, leadId, newStatus, {
+      callback_due_at: dueAt.toISOString(),
+    });
+    await createLeadTask(
+      supabase,
+      leadId,
+      lead.assigned_to ?? userId,
+      userId,
+      "Callback",
+      dueAt,
+      "callback",
+      "auto_callback"
+    );
+  }
+
+  await logActivity(
+    supabase,
+    leadId,
+    userId,
+    "contact_attempt",
+    body,
+    { workflow_status: oldStatus, result: null },
+    { workflow_status: newStatus, result }
+  );
+}
+
+export async function saveLeadActivity(
+  leadId: string,
+  comment: string,
+  activityType: LeadActivityType,
+  scheduledAt?: string | null
+) {
+  return perfAsync("saveLeadActivity", async () => {
+    if (!LEAD_ACTIVITY_TYPES.includes(activityType)) {
+      throw new Error("Invalid activity type");
+    }
+    const body = requireComment(comment);
+
+    if (activityType === "showroom" && !scheduledAt?.trim()) {
+      throw new Error("Showroom visit requires a date");
+    }
+
+    const { supabase, user } = await getAuthenticatedActionContext();
+    const { lead, officeCode } = await getLeadWithOffice(supabase, leadId);
+
+    await insertLeadComment(supabase, leadId, user.id, lead.lead_status, body);
+
+    if (activityType === "note") {
+    if (scheduledAt?.trim()) {
+      const when = new Date(scheduledAt);
+      if (Number.isNaN(when.getTime())) throw new Error("Invalid date");
+      const title = taskTitleFromComment(body, lead.name);
+      await createLeadTask(
+        supabase,
+        leadId,
+        lead.assigned_to ?? user.id,
+        user.id,
+        title,
+        when,
+        "manual",
+        "manual"
+      );
+      await logActivity(supabase, leadId, user.id, "task_created", body, null, {
+        title,
+        due_at: when.toISOString(),
+      });
+    } else {
+      await logActivity(supabase, leadId, user.id, "note_added", body);
+    }
+  } else if (activityType === "showroom") {
+    const when = new Date(scheduledAt!);
+    if (Number.isNaN(when.getTime())) throw new Error("Invalid date");
+
+    const { error } = await supabase.from("lead_showroom_visits").insert({
+      lead_id: leadId,
+      scheduled_at: when.toISOString(),
+      status: "scheduled",
+      comment: body,
+      created_by: user.id,
+    });
+    if (error) throw error;
+
+    const oldStatus = lead.workflow_status;
+    await updateWorkflowStatus(supabase, leadId, "showroom_scheduled");
+    await createLeadTask(
+      supabase,
+      leadId,
+      lead.assigned_to ?? user.id,
+      user.id,
+      "Showroom visit",
+      when,
+      "showroom_visit",
+      "auto_showroom_visit"
+    );
+    await logActivity(
+      supabase,
+      leadId,
+      user.id,
+      "showroom_visit_scheduled",
+      body,
+      { workflow_status: oldStatus },
+      { workflow_status: "showroom_scheduled", scheduled_at: when.toISOString() }
+    );
+  } else {
+    await applyContactAttempt(
+      supabase,
+      leadId,
+      user.id,
+      lead,
+      officeCode,
+      activityType as ContactResult,
+      body
+    );
+  }
+
+  const finishOptions = activityType === "note" ? FINISH_LIST : FINISH_FULL;
+
+  return finishLeadMutation(leadId, finishOptions);
+  });
+}
+
+export async function setLeadQuality(leadId: string, quality: LeadQuality | null) {
+  if (quality !== null && !LEAD_QUALITIES.includes(quality)) {
+    throw new Error("Invalid lead quality");
+  }
+
+  const { supabase, user } = await getAuthenticatedActionContext();
+  const { data: before } = await supabase
+    .from("leads")
+    .select("lead_quality")
+    .eq("id", leadId)
+    .single();
+  if (!before) throw new Error("Lead not found");
+
+  const { error } = await supabase
+    .from("leads")
+    .update({ lead_quality: quality })
+    .eq("id", leadId);
+  if (error) throw error;
+
+  await logActivity(
+    supabase,
+    leadId,
+    user.id,
+    "lead_quality_changed",
+    null,
+    { lead_quality: before.lead_quality },
+    { lead_quality: quality }
+  );
+
+  return finishLeadMutation(leadId, FINISH_NONE);
+}
+
+const LOSS_REASON_CODES = ["spam", "not_target", "price"] as const;
+
+export async function closeLeadAsBad(
+  leadId: string,
+  lossReason: string,
+  comment: string
+) {
+  const body = requireComment(comment);
+  if (!LOSS_REASON_CODES.includes(lossReason as (typeof LOSS_REASON_CODES)[number])) {
+    throw new Error("Invalid loss reason");
+  }
+
+  const { supabase, user } = await getAuthenticatedActionContext();
+  const { lead, officeCode } = await getLeadWithOffice(supabase, leadId);
+
+  await insertLeadComment(supabase, leadId, user.id, lead.lead_status, body);
+  await applyContactAttempt(
+    supabase,
+    leadId,
+    user.id,
+    lead,
+    officeCode,
+    "bad_lead",
+    body
+  );
+
+  const { error } = await supabase
+    .from("leads")
+    .update({ loss_reason: lossReason })
+    .eq("id", leadId);
+  if (error) throw error;
+
+  return finishLeadMutation(leadId, FINISH_FULL);
 }

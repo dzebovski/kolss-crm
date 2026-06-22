@@ -3,13 +3,8 @@
 import { FormEvent, KeyboardEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { safeAppReturnTo } from "@/lib/navigation";
 import { Button } from "./ui/button";
-
-function safeNextPath(next: string | null): string {
-  if (!next) return "/app/dashboard";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/app/dashboard";
-  return next;
-}
 
 export function LoginForm() {
   const router = useRouter();
@@ -62,7 +57,7 @@ export function LoginForm() {
     }
 
     setLoading(false);
-    const next = safeNextPath(searchParams.get("next"));
+    const next = safeAppReturnTo(searchParams.get("next"));
     router.push(next);
     router.refresh();
   }

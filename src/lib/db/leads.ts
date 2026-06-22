@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveLeadListStatusFilter } from "@/lib/workflow";
 import type { Lead } from "@/lib/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types/supabase";
+
+type DbClient = SupabaseClient<Database>;
 
 export const LEAD_LIST_COLUMNS =
-  "id, name, phone, email, workflow_status, office_id, next_task_due_at, next_task_title, created_at, workflow_status_changed_at, assigned_to, source_channel, source_system, offices(code, name_uk), profiles:assigned_to(display_name)";
+  "id, name, phone, email, workflow_status, office_id, last_comment, last_comment_at, created_at, workflow_status_changed_at, assigned_to, source_channel, source_system, offices(code, name_uk), profiles:assigned_to(display_name)";
 
 export type LeadListFilters = {
   officeId?: string;
@@ -12,10 +17,10 @@ export type LeadListFilters = {
   limit: number;
 };
 
-export async function listLeads(filters: LeadListFilters) {
-  const supabase = await createClient();
+export async function listLeads(filters: LeadListFilters, supabase?: DbClient) {
+  const db = supabase ?? (await createClient());
 
-  let query = supabase
+  let query = db
     .from("leads")
     .select(LEAD_LIST_COLUMNS, { count: "exact" })
     .order("created_at", { ascending: false })
@@ -24,8 +29,11 @@ export async function listLeads(filters: LeadListFilters) {
   if (filters.officeId) {
     query = query.eq("office_id", filters.officeId);
   }
-  if (filters.status) {
-    query = query.eq("workflow_status", filters.status);
+  const statuses = resolveLeadListStatusFilter(filters.status);
+  if (statuses?.length === 1) {
+    query = query.eq("workflow_status", statuses[0]);
+  } else if (statuses?.length) {
+    query = query.in("workflow_status", statuses);
   }
   if (filters.callbackOnly) {
     query = query.in("workflow_status", ["callback_required", "in_work"]).not(
@@ -69,7 +77,7 @@ export async function getLeadAttachments(leadId: string) {
   const supabase = await createClient();
   return supabase
     .from("lead_attachments")
-    .select("*")
+    .select("*, profiles:uploaded_by(display_name)")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
 }

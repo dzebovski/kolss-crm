@@ -5,7 +5,19 @@
     "newLead": "Новий лід",
     "users": "Користувачі",
     "design": "Дизайн",
+    "navigation": "Головна навігація",
+    "account": "Обліковий запис",
+    "close": "Закрити",
     "signOut": "Вийти"
+  },
+  "navigation": {
+    "loading": "Завантаження сторінки…"
+  },
+  "search": {
+    "placeholder": "Пошук за ім’ям, телефоном, email або ID…",
+    "empty": "Клієнтів не знайдено",
+    "hint": "Доступні клієнти",
+    "loading": "Пошук…"
   },
   "common": {
     "back": "Назад",
@@ -33,6 +45,27 @@
     "open": "Відкрита",
     "done": "Виконана",
     "canceled": "Скасована"
+  },
+  "feedback": {
+    "loading": "Завантаження…",
+    "saving": "Збереження…",
+    "takingInWork": "Беремо в роботу…",
+    "creatingTask": "Створюємо задачу…",
+    "savingData": "Зберігаємо дані…",
+    "updatingStatus": "Оновлюємо статус…",
+    "uploadingFiles": "Завантажуємо файли…",
+    "addingNote": "Додаємо нотатку…",
+    "completingTask": "Виконуємо задачу…",
+    "waitForCurrentAction": "Дочекайтеся завершення поточної дії",
+    "operationFailed": "Не вдалося виконати дію",
+    "actionCompleted": "Дані успішно оновлено",
+    "leadTakenInWork": "Лід взято в роботу",
+    "taskCreated": "Задачу створено",
+    "taskCompleted": "Задачу виконано",
+    "taskCanceled": "Задачу скасовано",
+    "noteAdded": "Нотатку додано",
+    "dataSaved": "Дані збережено",
+    "filesUploaded": "Файли завантажено"
   },
   "workflow": {
     "status": {
@@ -135,19 +168,150 @@
     "technicalDetails": "Технічні дані імпорту",
     "cityRegion": "Місто / регіон",
     "productInterest": "Що замовляє",
+    "orderComment": "Коментар до замовлення",
     "sourceChannel": "Канал джерела",
     "sourceNote": "Примітка до джерела",
+    "edit": "Редагувати",
     "unassigned": "Не призначено",
     "noOpenTasks": "Немає відкритих задач",
     "noCalls": "Ще не було дзвінків",
     "noVisits": "Ще не було візитів",
     "noContracts": "Ще немає договорів",
-    "noPayments": "Ще немає оплат"
+    "noPayments": "Ще немає оплат",
+    "header": {
+      "nextTask": "Наступна задача",
+      "noNextTask": "Немає запланованих задач"
+    },
+    "activityComposer": {
+      "takeInWorkHint": "Призначте лід собі та почніть роботу з клієнтом.",
+      "recordLabel": "Запис",
+      "recordPlaceholder": "Що сталось або що домовились з клієнтом",
+      "optionalDate": "Дата (опційно)",
+      "optionalDateHint": "Якщо вказати дату — створиться задача з цим записом",
+      "showroomDateHint": "Для запису в шоурум дата обовʼязкова",
+      "showroomDateRequired": "Вкажіть дату візиту в шоурум",
+      "activityType": "Тип запису",
+      "save": "Зберегти",
+      "closeLead": "Закрити лід",
+      "closeLeadTitle": "Закрити лід як поганий",
+      "closeReason": "Причина",
+      "closeCommentPlaceholder": "Коротко поясніть, чому лід закривається",
+      "confirmClose": "Підтвердити закриття",
+      "terminal": "Для цього ліда активний процес завершено.",
+      "unavailable": "Для поточного статусу бракує активного запису процесу.",
+      "types": {
+        "note": "Нотатка",
+        "reached": "Дотелефонував",
+        "no_answer": "Недодзвон",
+        "cannot_talk": "Передзвін",
+        "showroom": "Запис у шоурум"
+      },
+      "lossReasons": {
+        "spam": "Сміття / спам",
+        "notTarget": "Нецільовий",
+        "price": "Не підійшла ціна"
+      }
+    },
+    "showroomActions": {
+      "title": "Шоурум",
+      "materials": "Матеріали"
+    },
+    "commerceActions": {
+      "title": "Договір та оплати"
+    },
+    "quality": {
+      "good": "Хороший лід",
+      "bad": "Поганий лід",
+      "cleared": "Мітку знято",
+      "markGood": "Хороший",
+      "markBad": "Поганий"
+    },
+    "closeLead": {
+      "action": "Закрити лід",
+      "title": "Закрити лід",
+      "description": "Лід перейде в статус «Поганий» і зникне з активного списку.",
+      "reason": "Причина",
+      "commentPlaceholder": "Коротко поясніть, чому лід закривається",
+      "confirm": "Підтвердити закриття",
+      "lossReasons": {
+        "spam": "Сміття / спам",
+        "notTarget": "Нецільовий",
+        "price": "Не підійшла ціна"
+      }
+    },
+    "tasksPanel": {
+      "title": "Відкриті задачі",
+      "canceledComment": "Скасовано з картки клієнта"
+    },
+    "timeline": {
+      "title": "Історія взаємодії",
+      "empty": "Для цього фільтра ще немає подій",
+      "saving": "Збереження…",
+      "note": "Нотатка",
+      "fileAdded": "Додано файл",
+      "filters": {
+        "all": "Усе",
+        "records": "Записи",
+        "statuses": "Статуси",
+        "tasks": "Задачі"
+      },
+      "categories": {
+        "records": "Запис",
+        "statuses": "Статус",
+        "tasks": "Задача"
+      },
+      "events": {
+        "created": "Лід створено",
+        "lead_assigned": "Призначено менеджера",
+        "customer_data_updated": "Оновлено дані клієнта",
+        "callback_cleared": "Передзвін закрито",
+        "no_answer": "Клієнт не відповів",
+        "converted": "Лід конвертовано",
+        "status_changed": "Статус змінено",
+        "note_added": "Додано нотатку",
+        "lead_quality_changed": "Змінено якість ліда"
+      }
+    },
+    "filesPanel": {
+      "title": "Файли",
+      "add": "Додати",
+      "uploading": "Завантаження…",
+      "empty": "Файлів ще немає",
+      "hint": "PDF, JPG, PNG, DOCX або XLSX — до 5 МБ кожен"
+    },
+    "commerce": {
+      "title": "Договір та оплати",
+      "addContract": "+ Договір",
+      "addContractTitle": "Запланувати договір",
+      "contract": "Договір",
+      "noContract": "Ще немає",
+      "totals": "Оплачено",
+      "production": "Виробництво",
+      "installed": "Встановлення",
+      "warranty": "Гарантія"
+    }
   },
   "dashboard": {
     "title": "Дашборд",
     "period": "Період",
     "days": "{count} днів",
+    "filters": {
+      "allOffices": "Усі офіси",
+      "officeAria": "Фільтр за офісом",
+      "fromAria": "Дата початку періоду",
+      "toAria": "Дата кінця періоду",
+      "presetAria": "Швидкий вибір періоду",
+      "presets": {
+        "today": "Сьогодні",
+        "yesterday": "Вчора",
+        "week": "За тиждень",
+        "month": "За місяць"
+      },
+      "offices": {
+        "kyiv": "Київ",
+        "warsaw": "Варшава"
+      }
+    },
     "leadsCreated": "Створено лідів",
     "notTaken": "Не взято в роботу",
     "reached": "Додзвонились",
@@ -170,15 +334,24 @@
       "callbacks": "Передзвонити",
       "noShow": "Не прийшли в шоурум",
       "scheduledShowroom": "Заплановані візити",
-      "contractPrepay": "До договору / передоплати"
+      "contractPrepay": "До договору / передоплати",
+      "dateGroups": {
+        "overdue": "Прострочені",
+        "today": "Сьогодні",
+        "tomorrow": "Завтра",
+        "scheduled": "Заплановані"
+      }
     }
   },
   "leads": {
     "title": "Клієнти",
     "new": "Новий клієнт",
     "filterCallback": "Передзвонити",
+    "filterShowroom": "Шоурум",
+    "filterDeal": "Угода",
     "allStatuses": "Усі статуси",
     "nextTask": "Наступна задача",
+    "lastComment": "Останній коментар",
     "assignedTo": "Менеджер",
     "duplicateWarning": "Лід з таким телефоном або email може вже існувати"
   },
@@ -204,5 +377,12 @@
     "spam": "Спам",
     "not_target": "Нецільовий",
     "price": "Не підійшла ціна"
+  },
+  "viewAs": {
+    "label": "Перегляд як",
+    "super_admin": "Супер-адмін",
+    "kyiv": "Співробітник київського офісу",
+    "warsaw": "Співробітник варшавського офісу",
+    "preview": "Перегляд"
   }
 }

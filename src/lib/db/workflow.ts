@@ -13,7 +13,7 @@ export async function getLeadTasks(leadId: string) {
   const supabase = await createClient();
   return supabase
     .from("tasks")
-    .select("*")
+    .select("*, profiles:created_by(display_name)")
     .eq("entity_type", "lead")
     .eq("entity_id", leadId)
     .order("due_at", { ascending: true });
@@ -23,7 +23,7 @@ export async function getLeadShowroomVisits(leadId: string) {
   const supabase = await createClient();
   return supabase
     .from("lead_showroom_visits")
-    .select("*")
+    .select("*, profiles:created_by(display_name)")
     .eq("lead_id", leadId)
     .order("scheduled_at", { ascending: false });
 }
@@ -32,7 +32,7 @@ export async function getLeadContracts(leadId: string) {
   const supabase = await createClient();
   return supabase
     .from("lead_contracts")
-    .select("*")
+    .select("*, profiles:created_by(display_name)")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
 }
@@ -41,7 +41,7 @@ export async function getLeadPayments(leadId: string) {
   const supabase = await createClient();
   return supabase
     .from("lead_payments")
-    .select("*")
+    .select("*, profiles:created_by(display_name)")
     .eq("lead_id", leadId)
     .order("paid_at", { ascending: false });
 }

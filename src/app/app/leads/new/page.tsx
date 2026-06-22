@@ -1,16 +1,18 @@
 import { requireAuth } from "@/lib/auth";
 import { defaultCityForOffice } from "@/lib/offices";
-import { resolveUserOfficeContext } from "@/lib/queries/user-offices";
+import { resolveEffectiveContext } from "@/lib/queries/effective-context";
 import { CreateLeadForm } from "@/components/create-lead-form";
 
 export default async function NewLeadPage() {
   const ctx = await requireAuth();
-  const { isSuperAdmin, offices, userOffices } =
-    await resolveUserOfficeContext(ctx);
+  const effective = await resolveEffectiveContext(ctx);
+  const { officeCtx, forcedOfficeId } = effective;
+  const { isSuperAdmin, offices, userOffices } = officeCtx;
 
   const defaultOffice = userOffices[0] ?? offices[0];
-  const formOffices = isSuperAdmin ? offices : userOffices;
-  const canPickOffice = isSuperAdmin || userOffices.length > 1;
+  const formOffices = forcedOfficeId ? userOffices : isSuperAdmin ? offices : userOffices;
+  const canPickOffice =
+    !forcedOfficeId && (isSuperAdmin ? offices.length > 1 : userOffices.length > 1);
 
   return (
     <div>

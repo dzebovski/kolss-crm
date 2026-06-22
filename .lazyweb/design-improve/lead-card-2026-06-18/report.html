@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KOLSS CRM — адаптація картки клієнта</title>
+  <style>
+    :root {
+      --bg: #f8f7f4;
+      --surface: #fff;
+      --surface-2: #f6f6f4;
+      --text: #181817;
+      --muted: #66665f;
+      --border: #e1e1dd;
+      --green: #2d4a3e;
+      --green-soft: #eef5f1;
+      --warning: #fff7e6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.2; }
+    h2 { margin: 42px 0 14px; font-size: 23px; }
+    h3 { margin: 30px 0 10px; font-size: 18px; }
+    p, li { color: var(--muted); }
+    strong { color: var(--text); }
+    .tldr {
+      margin: 24px 0;
+      padding: 18px 20px;
+      border: 1px solid #c8ddd2;
+      border-radius: 10px;
+      background: var(--green-soft);
+    }
+    .hero {
+      width: 100%;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 28px rgba(24, 24, 23, .08);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .card h3 { margin-top: 0; }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fbfbfa;
+      color: #383834;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    th, td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: var(--surface-2); }
+    .decision {
+      border-left: 4px solid var(--green);
+      padding-left: 16px;
+    }
+    @media (max-width: 700px) {
+      main { padding: 24px 16px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <span class="badge">Design review · 18 червня 2026</span>
+  <h1>Картка клієнта KOLSS CRM</h1>
+  <p>Адаптація наданого CRM-референсу під фактичний lead-centric workflow і дизайн-систему KOLSS.</p>
+
+  <div class="tldr">
+    <strong>Рішення:</strong> сприймаємо референс як wireframe. Зберігаємо topbar, sidebar, центральний timeline і праву контекстну панель; візуальну мову повністю переводимо на KOLSS green та наявні нейтральні токени.
+  </div>
+
+  <img class="hero" src="references/current.png" alt="Наданий CRM wireframe">
+
+  <h2>Що беремо</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Глобальна оболонка</h3>
+      <p>Topbar із пошуком, офісом і користувачем. Sidebar: Дашборд, Ліди, Задачі, адміністративні розділи.</p>
+    </section>
+    <section class="card">
+      <h3>Header клієнта</h3>
+      <p>Ім’я, workflow-статус, офіс, менеджер, джерело, наступна задача і одна primary action.</p>
+    </section>
+    <section class="card">
+      <h3>Центральний timeline</h3>
+      <p>Дзвінки, задачі, шоурум, договори, оплати, файли та системні події в одній хронології.</p>
+    </section>
+    <section class="card">
+      <h3>Права context panel</h3>
+      <p>Контакти, джерело, договори/оплати та файли. Sticky на desktop, accordion або drawer на mobile.</p>
+    </section>
+  </div>
+
+  <h2>Рекомендована композиція</h2>
+  <pre>┌─────────────────────────────────────────────────────────────────────────┐
+│ TOPBAR: KOLSS · офіс | глобальний пошук | сповіщення | користувач      │
+├──────────────┬──────────────────────────────────────────────────────────┤
+│ SIDEBAR      │ ← До лідів                                               │
+│              │ ┌──────────────────────────────────────────────────────┐ │
+│ Дашборд      │ │ CLIENT HEADER + STATUS + NEXT TASK + PRIMARY ACTION │ │
+│ Ліди         │ └──────────────────────────────────────────────────────┘ │
+│ Задачі       │ ┌─────────────────────────────────┬────────────────────┐ │
+│              │ │ QUICK ACTION / TASK COMPOSER    │ CONTACTS           │ │
+│              │ ├─────────────────────────────────┤ SOURCE             │ │
+│              │ │ FILTERED ACTIVITY TIMELINE      ├────────────────────┤ │
+│              │ │                                 │ CONTRACT/PAYMENTS  │ │
+│              │ │                                 ├────────────────────┤ │
+│              │ │                                 │ FILES              │ │
+│              │ └─────────────────────────────────┴────────────────────┘ │
+└──────────────┴──────────────────────────────────────────────────────────┘</pre>
+
+  <h2>Ключові адаптації</h2>
+  <table>
+    <thead><tr><th>Референс</th><th>KOLSS CRM</th></tr></thead>
+    <tbody>
+      <tr><td>Яскравий синій accent</td><td>KOLSS green #2D4A3E, soft #EEF5F1</td></tr>
+      <tr><td>Усі action-кнопки одночасно</td><td>Одна основна дія відповідно до workflow-статусу</td></tr>
+      <tr><td>Угоди як окремий розділ</td><td>Єдина картка ліда без дублювання проєкту</td></tr>
+      <tr><td>Розділені історії</td><td>Один timeline із фільтрами за типом події</td></tr>
+      <tr><td>Постійна права панель</td><td>Sticky desktop; drawer/accordion на вузьких екранах</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Primary action за статусом</h2>
+  <p class="decision">Новий → Взяти в роботу → Записати дзвінок → Запланувати шоурум → Завершити візит → Запланувати/підписати договір → Передоплата → Виробництво → Постоплата/встановлення → Гарантія.</p>
+
+  <h2>Що не переносимо</h2>
+  <ul>
+    <li>синю універсальну CRM-естетику;</li>
+    <li>великий постійний набір кнопок;</li>
+    <li>окремі «угоди/проєкти», що дублюють lead-centric workflow;</li>
+    <li>великі неактивні картки майбутніх етапів;</li>
+    <li>технічний UUID користувача в topbar.</li>
+  </ul>
+
+  <h2>Пріоритет реалізації</h2>
+  <ol>
+    <li>App shell: topbar + sidebar.</li>
+    <li>Двоколонкова картка клієнта.</li>
+    <li>Timeline + quick action/task composer.</li>
+    <li>Редагування контактів і керування файлами.</li>
+    <li>Responsive drawer/accordion для правої панелі.</li>
+  </ol>
+</main>
+</body>
+</html>

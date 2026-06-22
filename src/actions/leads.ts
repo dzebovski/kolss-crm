@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateLeads, revalidateProjects } from "@/lib/cache-tags";
+import { revalidateLeadCache, revalidateProjects, LEAD_CACHE_SCOPES } from "@/lib/cache-tags";
 import { getAuthenticatedActionContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +14,7 @@ import { uploadLeadAttachments } from "@/services/storage/lead-attachments";
 import { computeNoAnswerDueAt } from "@/lib/task-scheduling";
 import type { Json } from "@/lib/types/supabase";
 import { parseOptionalDecimal, validatePriceLossFields } from "@/lib/validation";
+import { finishLeadMutation } from "@/lib/lead-mutations";
 
 async function insertLeadEvent(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -41,7 +42,7 @@ export async function takeLeadInProgress(leadId: string) {
 
   if (error) throw new Error(error.message);
 
-  revalidateLeads(leadId);
+  revalidateLeadCache(LEAD_CACHE_SCOPES.full);
 }
 
 export async function recordNoAnswer(leadId: string) {
@@ -76,7 +77,7 @@ export async function recordNoAnswer(leadId: string) {
     callback_due_at: dueAt.toISOString(),
   });
 
-  revalidateLeads(leadId);
+  revalidateLeadCache(LEAD_CACHE_SCOPES.listOnly);
 }
 
 export async function clearCallbackDue(leadId: string) {
@@ -102,7 +103,7 @@ export async function clearCallbackDue(leadId: string) {
     lead_status: lead.lead_status,
   });
 
-  revalidateLeads(leadId);
+  revalidateLeadCache(LEAD_CACHE_SCOPES.listOnly);
 }
 
 export async function markLeadFailed(
@@ -128,7 +129,7 @@ export async function markLeadFailed(
 
   if (error) throw new Error(error.message);
 
-  revalidateLeads(leadId);
+  revalidateLeadCache(LEAD_CACHE_SCOPES.full);
 }
 
 export async function convertLeadToProject(leadId: string) {
@@ -142,7 +143,7 @@ export async function convertLeadToProject(leadId: string) {
   if (error) throw new Error(error.message);
   if (!projectId) throw new Error("Не вдалося створити проєкт");
 
-  revalidateLeads(leadId);
+  revalidateLeadCache(LEAD_CACHE_SCOPES.full);
   revalidateProjects(projectId);
 
   return projectId;
@@ -168,7 +169,52 @@ export async function addLeadComment(leadId: string, body: string) {
   });
 
   if (error) throw error;
-  revalidateLeads(leadId);
+  return finishLeadMutation(leadId, {
+    invalidate: LEAD_CACHE_SCOPES.listOnly,
+    snapshot: { includeAttachments: false },
+  });
+}
+
+export async function uploadLeadAttachmentsAction(
+  leadId: string,
+  formData: FormData
+) {
+  const { supabase, user } = await getAuthenticatedActionContext();
+  const files = filesFromFormData(formData);
+  if (!files.length) throw new Error("Оберіть хоча б один файл");
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("office_id")
+    .eq("id", leadId)
+    .single();
+  if (!lead) throw new Error("Lead not found");
+
+  const uploaded = await uploadLeadAttachments(
+    supabase,
+    leadId,
+    lead.office_id,
+    user.id,
+    files
+  );
+
+  const { error } = await supabase.from("lead_events").insert({
+    lead_id: leadId,
+    actor_id: user.id,
+    event_type: "files_uploaded",
+    new_value: {
+      files: uploaded.map((file) => ({
+        id: file.id,
+        file_name: file.file_name,
+      })),
+    },
+  });
+  if (error) throw error;
+
+  return finishLeadMutation(leadId, {
+    invalidate: LEAD_CACHE_SCOPES.none,
+    snapshot: { includeAttachments: true },
+  });
 }
 
 async function resolveOfficeIdForCreate(
@@ -301,6 +347,6 @@ export async function createManualLead(formData: FormData) {
   await enqueueLeadNotifications(admin, lead, officeRow ?? null);
   await processPendingNotifications(admin);
 
-  revalidateLeads();
+  revalidateLeadCache(LEAD_CACHE_SCOPES.full);
   return { leadId: lead.id, duplicateWarning };
 }
